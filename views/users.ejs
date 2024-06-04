@@ -20,36 +20,27 @@
     </style>
 </head>
 <body>
-    <h1>Following Books Are Available</h1>
+    <h1>Following Users are reegistered</h1>
     <table>
-        <!--
-            id
-            title
-            author
-            genre
-            language
-            summary
-            count
-        -->
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Genre</th>
-                <th>Language</th>
-                <th>Count</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Role</th>
             </tr>
         </thead>
         <tbody>
-            <% books.forEach(book => {%>
+            <% users.forEach(user => {%>
             <tr>
-                <td> <%= book.book_id %> </td>
-                <td> <%= book.book_title %> </td>
-                <td> <%= book.book_author %> </td>
-                <td> <%= book.book_genre %> </td>
-                <td> <%= book.book_language %> </td>
-                <td> <%= book.book_count %> </td>
+                <td> <%= user.user_id %> </td>
+                <td> <%= user.user_name %> </td>
+                <td> <%= user.user_phone %> </td>
+                <td> <%= user.user_email %> </td>
+                <td> <%= user.user_address %> </td>
+                <td> <%= user.user_role %> </td>
             </tr>
             <% });%>
         </tbody>
