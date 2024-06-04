@@ -24,7 +24,6 @@ CREATE TABLE books(
     `book_language` VARCHAR(255) NOT NULL,
     `book_summary`  TEXT,
     `book_count`    INT NOT NULL
---  `book_path`     VARCHAR(255) NOT NULL, -- book pdf path, TODO
 --  `book_thumb`    VARCHAR(255) NOT NULL, -- book thumbnail path, TODO
 --   also store files as: md5(file) to gaurantee unique files or is it? ;)
 );

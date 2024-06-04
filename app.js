@@ -28,6 +28,12 @@ const run_query = async query => {
 app.get('/', (req, res) => {
 
     // TODO: If not logged in, redirect to /login
+    // If admin, redirect to /admin
+    // Show user options
+    // 1. Books
+    // 2. View fines due
+    // 3. View borrow history
+    // 4. view profile and logout
 
     res.send('Hello Worlds!');
 });
@@ -160,6 +166,70 @@ app.post('/books/add', async (req, res) => {
         console.log(`query ran: ${query}`);
 
         res.send('Book added successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/books/remove', async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        console.log(`ID: ${id}`);
+
+        // TODO: Check for admin privilages
+
+        const query = `DELETE FROM books WHERE book_id IN (${id});`;
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Book(s) deleted successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/books/update', async (req, res) => {
+    try {
+        const { id, title, author, genre, language, summary, count } = req.body;
+
+        // TODO: Check for admin privilages
+
+        if (!title && !author && !genre && !language && !summary && !count) {
+            res.status(400).send('Nothing to update!');
+            return;
+        }
+
+        let query = `UPDATE books SET`;
+        if (title) {
+            query += ` book_title = ${mysql.escape(title)}`;
+        }
+        if (author) {
+            query += `, book_author = ${mysql.escape(author)}`;
+        }
+        if (genre) {
+            query += `, book_genre = ${mysql.escape(genre)}`;
+        }
+        if (language) {
+            query += `, book_language = ${mysql.escape(language)}`;
+        }
+        if (summary) {
+            query += `, book_summary = ${mysql.escape(summary)}`;
+        }
+        if (count) {
+            query += `, book_count = ${mysql.escape(count)}`;
+        }
+        query += ` WHERE book_id = ${id};`;
+
+        // const query = `INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES(${mysql.escape(title)}, ${mysql.escape(author)}, ${mysql.escape(genre)}, ${mysql.escape(language)}, ${mysql.escape(summary)}, ${mysql.escape(count)});`;
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Book updated successfully!');
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');
