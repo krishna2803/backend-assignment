@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books Available</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Following Books Are Available</h1>
+    <table>
+        <!--
+            id
+            title
+            author
+            genre
+            language
+            summary
+            count
+        -->
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Genre</th>
+                <th>Language</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% let i=0; books.forEach(book => {%>
+            <tr>
+                <td> <%= book.book_id %> </td>
+                <td> <%= book.book_title %> </td>
+                <td> <%= book.book_author %> </td>
+                <td> <%= book.book_genre %> </td>
+                <td> <%= book.book_language %> </td>
+                <td> <%= book.book_count %> </td>
+            </tr>
+            <% });%>
+        </tbody>
+    </table>
+</body>
+</html>
