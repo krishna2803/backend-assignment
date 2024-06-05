@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requests for Admin Role</title>
+</head>
+<body>
+    <div>
+        <button onclick="approveSelected()">Approve Selected</button>
+        <button onclick="denySelected()">Deny Selected</button>
+        <script>
+            function approveSelected() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                const userIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+                const url = '/admin/make';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Handle success
+                        console.log('Approval successful');
+                    } else {
+                        // Handle error
+                        console.error('Approval failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+
+            function denySelected() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                const userIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+                const url = '/admin/deny';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userIds })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Handle success
+                        console.log('Denial successful');
+                    } else {
+                        // Handle error
+                        console.error('Denial failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        </script>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Role</th>
+                <th>Request Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% requests.forEach(user => {%>
+            <tr>
+                <td> 
+                    <input type="checkbox" value="<%= user.user_id %>" <% if (user.request_status !== 'pending') { %> disabled <% } %>> 
+                </td>
+                <td> <%= user.user_name %> </td>
+                <td> <%= user.user_phone %> </td>
+                <td> <%= user.user_email %> </td>
+                <td> <%= user.user_address %> </td>
+                <td> <%= user.user_role %> </td>
+                <td> <%= user.request_status %> </td>
+            </tr>
+            <% });%>
+        </tbody>
+    </table>
+</body>
+</html>

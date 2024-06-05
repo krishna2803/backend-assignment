@@ -40,6 +40,14 @@ CREATE TABLE reservations(
     FOREIGN KEY (`book_id`)   REFERENCES books(book_id)
 );
 
+
+CREATE TABLE admin_requests(
+    `req_id`        INT PRIMARY KEY AUTO_INCREMENT,
+    `user_id`       INT NOT NULL,
+    `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
+    FOREIGN KEY (`user_id`)   REFERENCES users(user_id)
+)
+
 -- fine management
 CREATE TABLE fines(
     `fine_id`       INT PRIMARY KEY AUTO_INCREMENT,

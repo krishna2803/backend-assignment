@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= user.user_name %></title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/register.css">
+    <link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
     <div class="container">
@@ -36,10 +36,11 @@
                     <button id="editButton" type="button" class="btn btn-primary btn-block" onclick="toggleEdit()">Edit Details</button>
                     <button id="submitButton" type="submit" class="btn btn-primary btn-block" disabled>Submit</button>
                 </form>
+
                 <form action="/admin/ask" method="POST" class="mt-3">
+                    <input type="hidden" name="id" value="<%= user.user_id %>">
                     <button type="submit" class="btn btn-warning btn-block">Ask for admin role</button>
                 </form>
-                <!-- add a red coloured bootstrapped logout button that posts to /logout -->
                 <form action="/logout" method="POST" class="mt-3">
                     <button type="submit" class="btn btn-danger btn-block">Logout</button>
                 </form>

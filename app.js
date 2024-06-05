@@ -87,11 +87,13 @@ app.get('/', authenticate, (req, res) => {
 
     const admin = decoded.role === 'admin';
 
+    console.log('decoded: ', decoded);
+
     if (!admin) {
-        res.render('clientdashboard');
+        res.render('clientdashboard', {user: decoded});
         return;
     } else {
-        res.redirect('/users');
+        res.render('admindashboard');
     }
 });
 
@@ -118,7 +120,7 @@ app.post('/users/remove', authenticate_admin, async (req, res) => {
         await run_query(query);
         
         console.log(`query ran: ${query}`);
-        
+
         res.send('User(s) deleted successfully!');
     } catch (err) {
         console.log(err);
@@ -168,15 +170,115 @@ app.post('/profile/update', authenticate, async (req, res) => {
     res.redirect('/profile');
 });
 
-app.get('/admin', async (req, res) => {
+app.post('/admin/ask', authenticate, async (req, res) => {
+    try {
+        const { id } = req.body;
 
-    // Add sections:
-    // 1. Manage the book catalog (CRUD)
-    // 2. Approve/deny checkout and check-in requests from clients
-    // 3. Approve/deny requests from users seeking admin privileges.
+        const query = `INSERT INTO admin_requests (user_id) VALUES (${mysql.escape(id)});`;
 
-    res.send('TODO!');
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Request sent successfully!');
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
 });
+
+app.get('/admin/requests', authenticate_admin, async (req, res) => {
+    try {
+        const query = `SELECT * FROM admin_requests`;
+        const result = await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        const all_requests = await Promise.all(result[0].map(async (request) => {
+            const user_query = `SELECT * FROM users WHERE user_id = ${mysql.escape(request.user_id)}`;
+            let user_result = (await run_query(user_query))[0][0];
+            user_result["request_status"] = request.status;
+            return user_result;
+        }));
+
+        res.render('adminrequests', { requests: all_requests });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/admin/approve', authenticate_admin, async (req, res) => {
+    try {
+        // BUG: id must be an array!!!!
+        const { id } = req.body;
+        const ids = Array.from(new Set(id));
+
+        const request_query = `SELECT * FROM admin_requests WHERE req_id IN (${mysql.escape(ids)})`;
+        const request_result = (await run_query(request_query))[0];
+
+        console.log('query ran: ', request_query);
+
+        
+        let user_ids = Array.from(new Set(request_result.map(request => request.user_id)));
+
+
+        const query = `UPDATE admin_requests SET status = 'approved' WHERE req_id IN (${mysql.escape(ids)});`;
+
+        await run_query(query);
+        console.log(`query ran: ${query}`);
+
+        const previlage_query = `UPDATE users SET user_role = 'admin' WHERE user_id IN (${mysql.escape(user_ids)});`;
+        await run_query(previlage_query);
+
+        console.log(`query ran: ${previlage_query}`);
+        console.log('User(s) promoted to admin successfully!');
+
+        res.send('Request(s) approved successfully!');
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/admin/deny', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const query = `UPDATE admin_requests SET status = 'denied' WHERE user_id IN (${mysql.escape(id)});`;
+
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Request(s) denied successfully!');
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/admin/make', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const query = `UPDATE users SET user_role = 'admin' WHERE user_id IN (${mysql.escape(id)});`;
+
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('User promoted to admin successfully!');
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
 
 app.get('/register', (req, res) => {
     console.log('Incoming register request!');
@@ -225,6 +327,8 @@ app.post('/register', async (req, res) => {
 
 app.get('/login', (req, res) => {
     // res.send('hehe, login now :)');
+    // logout first
+    res.clearCookie('token');
     res.render('login');
 });
 
@@ -307,7 +411,7 @@ app.post('/login', async (req, res) => {
                 console.log('Token:', token);
                 res.set('Authorization', `Bearer ${token}`);
                 res.cookie('token', token, { httpOnly: false });
-                res.redirect('/books');
+                res.redirect('/');
             });
     } catch (err) {
         console.log(err);
@@ -318,6 +422,10 @@ app.post('/login', async (req, res) => {
 app.post('/logout', (req, res) => {
     res.clearCookie('token');
     res.redirect('/login');
+});
+
+app.get('/books/create', authenticate_admin, (req, res) => {
+    res.render('addbook');
 });
 
 // CREATE
@@ -342,8 +450,52 @@ app.post('/books/create', authenticate_admin, async (req, res) => {
 // READ
 app.get('/books', authenticate, async (req, res) => {
     try {
-        let result = await run_query('SELECT * FROM books');
-        res.render('books', { books: result[0] });
+        const books = await run_query('SELECT * FROM books');
+        const cookie = req.headers.cookie;
+        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+        res.render('books', { books: books[0], user: decoded });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+// request books
+app.post('/books/request', authenticate, async (req, res) => {
+    try {
+        const { book_id } = req.body;
+        const cookie = req.headers.cookie;
+        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+        const user_id = decoded.id;
+
+        const query = `INSERT INTO reservations (user_id, book_id) VALUES(${mysql.escape(user_id)}, ${mysql.escape(book_id)});`;
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Request sent successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.get('/books/update', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.query;
+
+        const query = `SELECT * FROM books WHERE book_id = ${mysql.escape(id)}`;
+        const result = await run_query(query);
+
+        console.log(`query ran: ${query}`);
+        const book = result[0][0];
+
+        if (!book) {
+            res.send('Book not found!');
+            return;
+        }
+
+        res.render('updatebook', { book: book });
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');
@@ -383,7 +535,7 @@ app.post('/books/update', authenticate_admin, async (req, res) => {
         }
         query += ` WHERE book_id = ${mysql.escape(id)};`;
 
-        // const query = `INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES(${mysql.escape(title)}, ${mysql.escape(author)}, ${mysql.escape(genre)}, ${mysql.escape(language)}, ${mysql.escape(summary)}, ${mysql.escape(count)});`;
+        
         await run_query(query);
 
         console.log(`query ran: ${query}`);

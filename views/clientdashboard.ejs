@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title><%= user.name %> | Dashboard</title>
 </head>
 <body>
-    <h1>View Books</h1>
+    <% if (user.role !== 'admin') { %>
+    <% } %>
+    
+    <h1>Welcome, <%= user.name %>!</h1>
     
     <button onclick="window.location.href='/books'">View Books</button>
     <button onclick="window.location.href='/profile'">View Profile</button>
-
+    <button onclick="window.location.href='/history'">View History</button>
+    <button onclick="window.location.href='/fines'" disabled title="Coming soon">View Due Fines</button>
     
 </body>
 </html>

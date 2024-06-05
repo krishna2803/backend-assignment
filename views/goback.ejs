@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= {status} %></title>
+</head>
+<body>
+    <%= {message} %>
+    <p>You should now be redirected back in 5 seconds. If it doesn't happen automatically, click <a href="#" onclick="window.history.back()">here</a>.</p>
+    <script>
+        setTimeout(() => {
+            window.history.back();
+        }, 5000);
+    </script>
+</body>
+</html>

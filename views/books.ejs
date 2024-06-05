@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,52 +10,133 @@
             border-collapse: collapse;
             width: 100%;
         }
-        th, td {
+
+        th,
+        td {
             padding: 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #f2f2f2;
         }
     </style>
 </head>
+
 <body>
     <h1>Following Books Are Available for request</h1>
-    <table>
-        <!--
-            id
-            title
-            author
-            genre
-            language
-            summary
-            count
-        -->
-        <thead>
-            <tr>
-                <th>Request</th>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Genre</th>
-                <th>Language</th>
-                <th>Count</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% books.forEach(book => {%>
-            <tr>
-                <td><input type="checkbox" name="selected_books" value="<%= book.book_id %>"></td>
-                <td> <%= book.book_id %> </td>
-                <td> <%= book.book_title %> </td>
-                <td> <%= book.book_author %> </td>
-                <td> <%= book.book_genre %> </td>
-                <td> <%= book.book_language %> </td>
-                <td> <%= book.book_count %> </td>
-            </tr>
-            <% });%>
-        </tbody>
-    </table>
+    <form action="/books" method="GET"></form>
+    <label for="q">Filter</label>
+    <input type="text" name="q" placeholder="example: &quot;author:foobar,genre:fiction &quot; ">
+    <button type="submit">Apply</button>
+    </form>
+    <% if (user.role==='admin' ) { %>
+        <button onclick="removeSelectedBooks()">Remove Selected Books</button>
+        <button onclick="updateSelectedBook()">Update Selected Book</button>
+        <script>
+            const removeSelectedBooks = () => {
+                const selectedBooks = document.querySelectorAll('input[name="selected_books"]:checked');
+                const bookIds = Array.from(selectedBooks).map(book => book.value);
+                fetch('/books/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: bookIds })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Selected books removed successfully');
+                        location.reload();
+                    } else {
+                        alert('Failed to remove selected books');
+                    }
+                }).catch(error => {
+                    alert('An error occurred while removing selected books:', error);
+                });
+            }
+            const updateSelectedBook = () => {
+                const selectedBooks = document.querySelectorAll('input[name="selected_books"]:checked');
+                if (selectedBooks.length > 1) {
+                    alert('Only one book can be updated at a time!');
+                } else if (selectedBooks.length === 1) {
+                    const bookId = selectedBooks[0].value;
+                    window.location.href = '/books/update?id=' + bookId;
+                } else {
+                    alert('Please select a book to update');
+                }
+            }
+        </script>
+        <button onclick="window.location.href='/books/create'">Add New Book</button>
+    <% } %>
+    <% if (user.role !== 'admin') { %>
+        <button onclick="requestSelectedBooks()">Request Selected Books</button>
+        <script>
+            const requestSelectedBooks = () => {
+                const selectedBooks = document.querySelectorAll('input[name="selected_books"]:checked');
+                const bookIds = Array.from(selectedBooks).map(book => book.value);
+                fetch('/books/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: bookIds })
+                }).then(response => {
+                    if (response.ok) {
+                        console.log(response);
+                        alert('Selected books requested successfully');
+                    } else {
+                        alert('Failed to request selected books. Contact Admin.');
+                    }
+                }).catch(error => {
+                    console.error('An error occurred while requesting selected books:', error);
+                });
+            }
+        </script>
+    <% } %>
+
+            <table>
+                <%#
+                    title
+                    author
+                    genre
+                    language
+                    summary
+                    count
+                %>
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Genre</th>
+                        <th>Language</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% books.forEach(book=> {%>
+                        <tr>
+                            <td><input type="checkbox" name="selected_books" value="<%= book.book_id %>"></td>
+                            <td>
+                                <%= book.book_title %>
+                            </td>
+                            <td>
+                                <%= book.book_author %>
+                            </td>
+                            <td>
+                                <%= book.book_genre %>
+                            </td>
+                            <td>
+                                <%= book.book_language %>
+                            </td>
+                            <td>
+                                <%= book.book_count %>
+                            </td>
+                        </tr>
+                        <% });%>
+                </tbody>
+            </table>
 </body>
+
 </html>

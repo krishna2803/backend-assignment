@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= book.book_title %></title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/addbook.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Update Book</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="/books/update" method="POST" class="p-4 border rounded shadow">
+                    <input type="hidden" name="id" value="<%= book.id %>">
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" name="title" id="title" class="form-control" value="<%= book.book_title %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Author:</label>
+                        <input type="text" name="author" id="author" class="form-control" value="<%= book.book_author %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="genre">Genre:</label>
+                        <input type="text" name="genre" id="genre" class="form-control" value="<%= book.book_genre %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="language">Language:</label>
+                        <input type="text" name="language" id="language" class="form-control" value="<%= book.book_language %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="summary">Summary:</label>
+                        <textarea name="summary" id="summary" class="form-control" rows="4"><%= book.book_summary %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="count">Count:</label>
+                        <input type="number" name="count" id="count" class="form-control" value="<%= book.book_count %>">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

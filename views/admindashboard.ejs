@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    
+    <button onclick="window.location.href='/users'">View Users</button>
+    <button onclick="window.location.href='/books'">View, Update or Delete Books</button>
+    <button onclick="window.location.href='/books/create'">Add new Book</button>
+    <button onclick="window.location.href='/todo'">View Checkin Requests</button>
+    <button onclick="window.location.href='/todo'">View Admin Requests</button>
+    <form action="/logout" method="POST" class="mt-3">
+        <button type="submit">Logout</button>
+    </form>
+
+    
+</body>
+</html>
