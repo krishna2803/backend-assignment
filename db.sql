@@ -11,7 +11,7 @@ CREATE TABLE users(
     `user_phone`    CHAR(10)     NOT NULL UNIQUE,
     `user_email`    VARCHAR(255) NOT NULL UNIQUE,
     `user_address`  VARCHAR(255) NOT NULL,
-    `user_role`     ENUM('client', 'admin') DEFAULT 'client'
+    `user_role`     VARCHAR(255) NOT NULL DEFAULT 'client'
 );
 
 -- dynamic search will search and try to find text content from
@@ -22,8 +22,8 @@ CREATE TABLE books(
     `book_author`   VARCHAR(255) NOT NULL,
     `book_genre`    VARCHAR(255) NOT NULL, -- comma seperated
     `book_language` VARCHAR(255) NOT NULL,
-    `book_summary`  TEXT,
-    `book_count`    INT NOT NULL
+    `book_summary`  TEXT NOT NULL,
+    `book_count`    INT NOT NULL DEFAULT 1
 --  `book_thumb`    VARCHAR(255) NOT NULL, -- book thumbnail path, TODO
 --   also store files as: md5(file) to gaurantee unique files or is it? ;)
 );
@@ -34,7 +34,7 @@ CREATE TABLE reservations(
     `res_id`        INT PRIMARY KEY AUTO_INCREMENT,
     `user_id`       INT NOT NULL,
     `book_id`       INT NOT NULL,
-    `status`        ENUM('approved','pending'),
+    `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
     `start_date`    TIMESTAMP NOT NULL DEFAULT NOW(),
     FOREIGN KEY (`user_id`)   REFERENCES users(user_id),
     FOREIGN KEY (`book_id`)   REFERENCES books(book_id)
