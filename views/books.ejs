@@ -20,7 +20,7 @@
     </style>
 </head>
 <body>
-    <h1>Following Books Are Available</h1>
+    <h1>Following Books Are Available for request</h1>
     <table>
         <!--
             id
@@ -33,6 +33,7 @@
         -->
         <thead>
             <tr>
+                <th>Request</th>
                 <th>ID</th>
                 <th>Title</th>
                 <th>Author</th>
@@ -44,6 +45,7 @@
         <tbody>
             <% books.forEach(book => {%>
             <tr>
+                <td><input type="checkbox" name="selected_books" value="<%= book.book_id %>"></td>
                 <td> <%= book.book_id %> </td>
                 <td> <%= book.book_title %> </td>
                 <td> <%= book.book_author %> </td>

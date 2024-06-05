@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= user.user_name %></title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/register.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">User Profile</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form id="profile_form" action="/profile/update" method="POST" class="p-4 border rounded shadow">
+                    <div class="form-group">
+                        <label for="username">Name:</label>
+                        <input type="text" id="username" name="username" class="form-control" value="<%= user.user_name %>" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" class="form-control" value="<%= user.user_email %>" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone:</label>
+                        <input type="tel" id="phone" name="phone" class="form-control" value="<%= user.user_phone %>" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address:</label>
+                        <input type="text" id="address" name="address" class="form-control" value="<%= user.user_address %>" disabled>
+                    </div>
+                    <div id="passwordContainer" class="form-group" style="display: none;">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" class="form-control">
+                    </div>
+                    <button id="editButton" type="button" class="btn btn-primary btn-block" onclick="toggleEdit()">Edit Details</button>
+                    <button id="submitButton" type="submit" class="btn btn-primary btn-block" disabled>Submit</button>
+                </form>
+                <form action="/admin/ask" method="POST" class="mt-3">
+                    <button type="submit" class="btn btn-warning btn-block">Ask for admin role</button>
+                </form>
+                <!-- add a red coloured bootstrapped logout button that posts to /logout -->
+                <form action="/logout" method="POST" class="mt-3">
+                    <button type="submit" class="btn btn-danger btn-block">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        const toggleEdit = () => {
+            document.getElementById('passwordContainer').style.display = "block";
+            document.getElementById("submitButton").disabled = false;
+            document.getElementById('editButton').style.display = "none";
+            document.getElementById('username').disabled = false;
+            document.getElementById('email').disabled = false;
+            document.getElementById('phone').disabled = false;
+            document.getElementById('address').disabled = false;
+        }
+    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

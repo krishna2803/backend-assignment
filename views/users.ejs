@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books Available</title>
+    <title>Registered Users</title>
     <style>
         table {
             border-collapse: collapse;
@@ -20,11 +20,16 @@
     </style>
 </head>
 <body>
-    <h1>Following Users are reegistered</h1>
+    <h1>Registered Users</h1>
+    <form action="/users" method="GET"></form>
+        <label for="q">Filter</label>
+        <input type="text" name="q" placeholder="example: &quot;name:foobar,email:*@example.com&quot; ">
+        <button type="submit">Apply</button>
+    </form>
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th>Selected</th>
                 <th>Name</th>
                 <th>Phone</th>
                 <th>Email</th>
@@ -35,7 +40,7 @@
         <tbody>
             <% users.forEach(user => {%>
             <tr>
-                <td> <%= user.user_id %> </td>
+                <td> <input type="checkbox" name="selected_users" value="<%= user.user_id %>"> </td>
                 <td> <%= user.user_name %> </td>
                 <td> <%= user.user_phone %> </td>
                 <td> <%= user.user_email %> </td>
@@ -45,5 +50,48 @@
             <% });%>
         </tbody>
     </table>
+    <!-- add buttons for "make admin" and "delete users"-->
+    <div>
+        <button id="makeAdminBtn" onclick="makeAdmin()">Make Admin</button>
+        <button id="deleteUsersBtn" onclick="deleteUsers()">Delete Users</button>
+    </div>
+    <script>
+        const makeAdmin = () => {
+            const selectedUsers = document.querySelectorAll('input[name="selected_users"]:checked');
+            const userIds = Array.from(selectedUsers).map(user => user.value);
+
+            fetch('/admin/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: userIds })
+            }).then(async res => {
+                // console.log(`${await res}`);
+            }).catch(err => {
+                // console.log(`${err}`);
+            });
+        };
+      
+        const deleteUsers = () => {
+            const selectedUsers = document.querySelectorAll('input[name="selected_users"]:checked');
+            const userIds = Array.from(selectedUsers).map(user => user.value);
+
+            // console.log(userIds);
+
+            fetch('/users/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: userIds })
+            }).then(async res => {
+                // console.log(`${await res}`);
+            }).catch(err => {
+                // console.log(`${err}`);
+            });
+        };
+      </script>
+      
 </body>
 </html>

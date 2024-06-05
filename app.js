@@ -54,14 +54,14 @@ const authenticate_admin = (req, res, next) => {
         return;
     }
     const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-    if (decode) {
+    if (decoded) {
         if (decoded.role === 'admin') {
             next();
         } else {
-            res.status(401).send("Unauthorized. Only admins are allowed to do this.");
+            res.status(401).send("Access Denied. Only admins are allowed here.");
         }
     } else {
-        res.status(401).send("Unauthorized");
+        res.status(401).send("Unauthorized. Login first.");
     }
 };
 
@@ -82,8 +82,17 @@ app.get('/', authenticate, (req, res) => {
     // 2. View fines due
     // 3. View borrow history
     // 4. view profile and logout
+    const cookie = req.headers.cookie;
+    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
 
-    res.render('home');
+    const admin = decoded.role === 'admin';
+
+    if (!admin) {
+        res.render('clientdashboard');
+        return;
+    } else {
+        res.redirect('/users');
+    }
 });
 
 app.post('/ping', (req, res) => {
@@ -92,9 +101,6 @@ app.post('/ping', (req, res) => {
 
 
 app.get('/users', authenticate_admin, async (req, res) => {
-
-    // TODO: check for admin previlages
-
     try {
         let result = await run_query('SELECT * FROM users');
         res.render('users', { users: result[0] });
@@ -102,6 +108,64 @@ app.get('/users', authenticate_admin, async (req, res) => {
         console.log(err);
         res.status(500).send('Some error occured :(');
     }
+});
+
+app.post('/users/remove', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const query = `DELETE FROM users WHERE user_id IN (${mysql.escape(id)});`;
+        await run_query(query);
+        
+        console.log(`query ran: ${query}`);
+        
+        res.send('User(s) deleted successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.get('/profile', authenticate, async (req, res) => {
+    const cookie = req.headers.cookie;
+    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+
+    const query = `SELECT * FROM users WHERE user_id = ${mysql.escape(decoded.id)}`;
+    const result = await run_query(query);
+
+    console.log(`query ran: ${query}`);
+
+    const user_details = result[0][0];
+
+    res.render('profile', {user: user_details});
+});
+
+app.post('/profile/update', authenticate, async (req, res) => {
+    const cookie = req.headers.cookie;
+    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+
+    const { username, phone, email, address, password } = req.body;
+
+    // verify password 
+    const user_query = `SELECT * FROM users WHERE user_id = ${mysql.escape(decoded.id)}`;
+    const user_result = await run_query(user_query);
+
+    const hashed_pass = user_result[0][0].user_password;
+    const verify = await argon2.verify(hashed_pass, password);
+    if (!verify) {
+        res.status(409).send("Incorrect password!");
+        return;
+    }
+
+    const query = `UPDATE users SET user_name = ${mysql.escape(username)}, user_phone = ${mysql.escape(phone)}, user_email = ${mysql.escape(email)}, user_address = ${mysql.escape(address)} WHERE user_id = ${mysql.escape(decoded.id)}`;
+
+    await run_query(query);
+
+    console.log(`query ran: ${query}`);
+
+    console.log('Profile updated successfully!');
+
+    res.redirect('/profile');
 });
 
 app.get('/admin', async (req, res) => {

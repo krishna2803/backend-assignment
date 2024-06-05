@@ -1,0 +1,48 @@
+/* register.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+
+h1 {
+    font-weight: 600;
+}
+
+form {
+    background: #ffffff;
+}
+
+.form-control {
+    font-size: 16px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-link {
+    font-size: 16px;
+    color: #007bff;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    font-size: 16px;
+    font-weight: 600;
+}
