@@ -219,10 +219,8 @@ app.post('/admin/approve', authenticate_admin, async (req, res) => {
         const request_result = (await run_query(request_query))[0];
 
         console.log('query ran: ', request_query);
-
         
         let user_ids = Array.from(new Set(request_result.map(request => request.user_id)));
-
 
         const query = `UPDATE admin_requests SET status = 'approved' WHERE req_id IN (${mysql.escape(ids)});`;
 
@@ -460,20 +458,64 @@ app.get('/books', authenticate, async (req, res) => {
     }
 });
 
+app.get('/book/requests', authenticate_admin, async (req, res) => {
+    try {
+        const query = `SELECT * FROM reservations`;
+        const result = await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        const books = await Promise.all(result[0].map(async (reservation) => {
+            
+        }));
+
+        res.render('bookrequests', { requests: books });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
 // request books
 app.post('/books/request', authenticate, async (req, res) => {
     try {
-        const { book_id } = req.body;
+        const { id } = req.body;
         const cookie = req.headers.cookie;
         const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
         const user_id = decoded.id;
 
-        const query = `INSERT INTO reservations (user_id, book_id) VALUES(${mysql.escape(user_id)}, ${mysql.escape(book_id)});`;
+        const query = `INSERT INTO reservations (user_id, book_id) VALUES(${mysql.escape(user_id)}, ${mysql.escape(id)});`;
         await run_query(query);
 
         console.log(`query ran: ${query}`);
 
         res.send('Request sent successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/books/approve', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
+        await run_query(update_query);
+        console.log(`query ran: ${update_query}`);
+
+        const reservations = await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`);
+        reservations.forEach(async (reservation) => {
+            const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
+            const book = (await run_query(book_query))[0][0];
+            const new_count = book.book_count - 1;
+            const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
+            await run_query(update_book_query);
+            console.log(`query ran: ${update_book_query}`);
+        });
+
+
+        res.send('Request(s) approved successfully!');
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');

@@ -36,8 +36,8 @@ CREATE TABLE reservations(
     `book_id`       INT NOT NULL,
     `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
     `start_date`    TIMESTAMP NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (`user_id`)   REFERENCES users(user_id),
-    FOREIGN KEY (`book_id`)   REFERENCES books(book_id)
+    FOREIGN KEY (`user_id`)   REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (`book_id`)   REFERENCES books(book_id) ON DELETE CASCADE
 );
 
 
@@ -45,14 +45,15 @@ CREATE TABLE admin_requests(
     `req_id`        INT PRIMARY KEY AUTO_INCREMENT,
     `user_id`       INT NOT NULL,
     `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
-    FOREIGN KEY (`user_id`)   REFERENCES users(user_id)
+    FOREIGN KEY (`user_id`)   REFERENCES users(user_id) ON DELETE CASCADE
 )
 
 -- fine management
-CREATE TABLE fines(
-    `fine_id`       INT PRIMARY KEY AUTO_INCREMENT,
-    `res_id`        INT NOT NULL,
-    `fine_amount`   FLOAT NOT NULL DEFAULT 0.0,
-    FOREIGN KEY (`res_id`)   REFERENCES reservations(res_id)
-);
+-- some other day :)
+-- CREATE TABLE fines(
+--     `fine_id`       INT PRIMARY KEY AUTO_INCREMENT,
+--     `res_id`        INT NOT NULL,
+--     `fine_amount`   FLOAT NOT NULL DEFAULT 0.0,
+--     FOREIGN KEY (`res_id`)   REFERENCES reservations(res_id) ON DELETE CASCADE
+-- );
 
