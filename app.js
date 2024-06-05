@@ -1,26 +1,52 @@
 'use strict';
 
+// deepndencies
+const argon2 = require('argon2');
+const jwt = require('jsonwebtoken');
+
 // Express
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const app = express();
 
 // midddleware setup
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 // views
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 
+const authenticate = (req, res, next) => {
+    const cookie = req.headers.cookie;
+    if (!cookie) {
+        console.log('Not logged in :(');
+        console.log('Redirecting to /login');
+        res.redirect('/login');
+        return;
+    }
+    if (jwt.verify(cookie.split('token=')[1], process.env.JWTKEY)) {
+        let decoded = jwt.decode(cookie.split('token=')[1], process.env.JWTKEY);
+        // print the decoded token
+        console.log(decoded);
+        next();
+    } else {
+        res.status(401).send("Unauthorized");
+    }
+};
+
+
 // MySQL DB setup
 const mysql = require('mysql2');
 const dbConn = require('./database.js');
+const { rootCertificates } = require('tls');
 const run_query = async query => {
     return await dbConn.promise().query(query);
 }
@@ -42,15 +68,6 @@ app.post('/ping', (req, res) => {
     res.send('Pong! 🏓');
 });
 
-app.get('/books', async (req, res) => {
-    try {
-        let result = await run_query('SELECT * FROM books');
-        res.render('books', {books: result[0]});
-    } catch (err) {
-        console.log(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
 
 app.get('/users', async (req, res) => {
 
@@ -96,7 +113,9 @@ app.post('/register', async (req, res) => {
             return;
         }
 
-        const insert_query = `INSERT INTO users (user_name, user_password, user_phone, user_email, user_address) VALUES(${mysql.escape(username)}, ${mysql.escape(password)}, ${mysql.escape(phone)}, ${mysql.escape(email)}, ${mysql.escape(address)});`;
+        const hashed_pass = await argon2.hash(password);
+
+        const insert_query = `INSERT INTO users (user_name, user_password, user_phone, user_email, user_address) VALUES(${mysql.escape(username)}, ${mysql.escape(hashed_pass)}, ${mysql.escape(phone)}, ${mysql.escape(email)}, ${mysql.escape(address)});`;
 
         await run_query(insert_query);
         
@@ -107,6 +126,10 @@ app.post('/register', async (req, res) => {
         console.log(err);
         res.status(500).send('Some error occured :(');
     }
+});
+
+app.get('/login', (req, res) => {
+    res.send('hehe, login now :)');
 });
 
 app.post('/login', async (req, res) => {
@@ -132,9 +155,9 @@ app.post('/login', async (req, res) => {
 
         let user_query = null;
         if (email_result) {
-            user_query = `SELECT * FROM users WHERE user_email = ${mysql.escape(email)};`;
+            user_query = `SELECT * FROM users WHERE user_email = ${mysql.escape(email)}`;
         } else {
-            user_query = `SELECT * FROM users WHERE user_phone = ${mysql.escape(phone)};`;
+            user_query = `SELECT * FROM users WHERE user_phone = ${mysql.escape(phone)}`;
         }
 
         const result = await run_query(user_query);
@@ -145,16 +168,46 @@ app.post('/login', async (req, res) => {
             return;
         }
 
-        const name = result[0][0].user_name;
+        const hashed_pass = result[0][0].user_password;
+        const verify = await argon2.verify(hashed_pass, password);
+        if (!verify) {
+            res.status(409).send("Incorrect credentials!");
+            return;
+        }
+
+        const username = result[0][0].user_name;
+        const user_phone = result[0][0].user_phone;
+        const user_email = result[0][0].user_email;
+        const role = result[0][0].user_role;
+
+        console.log(`User ${username} logged in!`);
         
-        res.send(`Welcome! ${name}`);
+        jwt.sign({ name: username, phone: user_phone, email: user_email, role: role},
+                 process.env.JWTKEY, { expiresIn: '1d' },
+            (err, token) => {
+            if (err) {
+                res.status(500).send('Some error occored with JWT :(');
+                console.log(err);
+            }
+            console.log('JWT Signned :)');
+            console.log('Token:', token);
+            res.set('Authorization', `Bearer ${token}`);
+            res.cookie('token', token, { httpOnly: false });
+            res.redirect('/books');
+        });
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
-app.post('/books/add', async (req, res) => {
+app.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.redirect('/login');
+});
+
+// CREATE
+app.post('/books/create', async (req, res) => {
     try {
         const { title, author, genre, language, summary, count } = req.body;
 
@@ -172,26 +225,18 @@ app.post('/books/add', async (req, res) => {
     }
 });
 
-app.post('/books/remove', async (req, res) => {
+// READ
+app.get('/books', authenticate, async (req, res) => {
     try {
-        const { id } = req.body;
-
-        console.log(`ID: ${id}`);
-
-        // TODO: Check for admin privilages
-
-        const query = `DELETE FROM books WHERE book_id IN (${id});`;
-        await run_query(query);
-
-        console.log(`query ran: ${query}`);
-
-        res.send('Book(s) deleted successfully!');
+        let result = await run_query('SELECT * FROM books');
+        res.render('books', {books: result[0]});
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
+// UDPDATE
 app.post('/books/update', async (req, res) => {
     try {
         const { id, title, author, genre, language, summary, count } = req.body;
@@ -230,6 +275,27 @@ app.post('/books/update', async (req, res) => {
         console.log(`query ran: ${query}`);
 
         res.send('Book updated successfully!');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+// DELETE
+app.post('/books/delete', async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        console.log(`ID: ${id}`);
+
+        // TODO: Check for admin privilages
+
+        const query = `DELETE FROM books WHERE book_id IN (${id});`;
+        await run_query(query);
+
+        console.log(`query ran: ${query}`);
+
+        res.send('Book(s) deleted successfully!');
     } catch (err) {
         console.log(err);
         res.status(500).send('Some error occured :(');
