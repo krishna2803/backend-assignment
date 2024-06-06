@@ -13,20 +13,27 @@
                 display: none;
             }
         }
+        th, td {
+            text-align: center;
+            vertical-align: middle;
+        }
     </style>
 </head>
 
 <body>
     <div class="container mt-5">
-        <h1 class="text-center my-4">Following Books Are Available for Request</h1>
-        <a href="#" id='back-button' onclick="history.back()" class="btn btn-primary" onclick="history.back()">Back</a>
-        <form action="/books" method="GET" class="mb-3">
-            <div class="form-group">
-                <label for="q">Filter</label>
-                <input type="text" name="q" class="form-control" placeholder="example: &quot;author:foobar,genre:fiction &quot; ">
-            </div>
-            <button type="submit" class="btn btn-primary">Apply</button>
-        </form>
+        <h1 class="text-center mb-5">Following Books Are Available for Request</h1>
+        <div class="container mt-5">
+            <a href="#" id="back-button" class="btn btn-primary mb-3" onclick="history.back()">Back</a>
+            <form action="/books" method="GET">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search for title, author, name, genre or language">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary mb-3">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
         <% if (user.role === 'admin') { %>
             <div class="mb-3 text-center">
                 <button class="btn btn-danger mr-2" onclick="removeSelectedBooks()">Remove Selected Books</button>
@@ -46,6 +53,7 @@
                     <th>Author</th>
                     <th>Genre</th>
                     <th>Language</th>
+                    <th>Summary</th>
                     <th>Count</th>
                 </tr>
             </thead>
@@ -57,6 +65,7 @@
                         <td><%= book.book_author %></td>
                         <td><%= book.book_genre %></td>
                         <td><%= book.book_language %></td>
+                        <td><%= book.book_summary %></td>
                         <td><%= book.book_count %></td>
                     </tr>
                 <% }); %>

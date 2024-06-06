@@ -64,7 +64,7 @@ const authenticate_admin = (req, res, next) => {
 const mysql = require('mysql2');
 const dbConn = require('./database.js');
 const run_query = async query => {
-    console.log('Running query: ', query);
+    // console.log('Running query: ', query);
     return await dbConn.promise().query(query);
 }
 
@@ -149,7 +149,25 @@ app.post('/ping', async (req, res) => {
 app.get('/users', authenticate_admin, async (req, res) => {
     try {
         let result = await run_query('SELECT * FROM users');
-        res.render('users', { users: result[0] });
+        
+        const filter = req.query.q;
+        
+        if (!filter || filter.length === 0) {
+            res.render('users', { users: result[0] });
+            return;
+        }
+
+        const filtered_users = result[0].filter(user => {
+            return (
+                user.user_name.toLowerCase().includes(filter.toLowerCase()) ||
+                user.user_email.toLowerCase().includes(filter.toLowerCase()) ||
+                user.user_phone.toLowerCase().includes(filter.toLowerCase()) ||
+                user.user_address.toLowerCase().includes(filter.toLowerCase())
+            );
+        });
+
+        res.render('users', { users: filtered_users });
+
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
@@ -446,7 +464,25 @@ app.get('/books', authenticate, async (req, res) => {
         const books = await run_query('SELECT * FROM books');
         const cookie = req.headers.cookie;
         const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-        res.render('books', { books: books[0], user: decoded });
+
+        const filter = req.query.q;
+        
+        if (!filter || filter.length === 0) {
+            res.render('books', { books: books[0], user: decoded });
+            return;
+        }
+
+        const filtered_books = books[0].filter(book => {
+            return (
+                book.book_title.toLowerCase().includes(filter.toLowerCase()) ||
+                book.book_author.toLowerCase().includes(filter.toLowerCase()) ||
+                book.book_language.toLowerCase().includes(filter.toLowerCase()) ||
+                book.book_genre.toLowerCase().includes(filter.toLowerCase()) ||
+                book.book_summary.toLowerCase().includes(filter.toLowerCase())
+            );
+        });
+        res.render('books', { books: filtered_books, user: decoded });
+
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
