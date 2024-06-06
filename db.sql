@@ -36,7 +36,8 @@ CREATE TABLE reservations(
     `user_id`       INT NOT NULL,
     `book_id`       INT NOT NULL,
     `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
-    `start_time`    TIMESTAMP NOT NULL DEFAULT NOW(),
+    `count`         INT NOT NULL, -- store the book count of when the book was added
+    `time`    TIMESTAMP NOT NULL DEFAULT NOW(),
     `fine`          NUMERIC(8,2) DEFAULT 0.00,
     -- NUMERIC is just an alias for DECIMAL in MySQL
     -- nine decimal digits into 4 bytes

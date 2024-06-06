@@ -296,14 +296,14 @@ app.post('/register', async (req, res) => {
         const { username, password, confpass, phone, email, address } = req.body;
 
         if (confpass !== password) {
-            res.status(500).send("Passwords do not match!");
+            res.status(500).render('goback', { message: `Your passwords do not match :(`, status: `Registration Failure` });
         }
 
         const unique_email_query = `SELECT * FROM users WHERE user_email = ${mysql.escape(email)}`;
         const unique_email_result = await run_query(unique_email_query);
 
         if (unique_email_result[0].length > 0) {
-            res.status(409).send("An account associated with that email already exists!");
+            res.status(409).render('goback', { message: `An account associated with that email already exists!`, status: `Registration Conflict` });
             return;
         }
 
@@ -311,7 +311,7 @@ app.post('/register', async (req, res) => {
         const unique_phone_result = await run_query(unique_phone_query);
 
         if (unique_phone_result[0].length > 0) {
-            res.status(409).send("An account associated with that phone number already exists!");
+            res.status(409).render('goback', { message: `An account associated with that phone number already exists!`, status: `Registration Conflict` });
             return;
         }
 
@@ -321,7 +321,7 @@ app.post('/register', async (req, res) => {
 
         await run_query(insert_query);
 
-        res.send('User created successfully!');
+        res.render('goback', { message: `User ${username} created successfully!`, status: `Registration Success` });
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
@@ -364,7 +364,7 @@ app.post('/login', async (req, res) => {
         }
 
         if ((email && email_result[0].length === 0) && (phone && phone_result[0].length === 0)) {
-            res.status(409).send("Account does not exist!");
+            res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
             return;
         }
 
@@ -377,14 +377,14 @@ app.post('/login', async (req, res) => {
 
         const result = await run_query(user_query);
         if (result[0].length === 0) {
-            res.status(409).send("Account does not exist!");
+            res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
             return;
         }
 
         const hashed_pass = result[0][0].user_password;
         const verify = await argon2.verify(hashed_pass, password);
         if (!verify) {
-            res.status(409).send("Incorrect credentials!");
+            res.status(409).render('goback', { message: `The email/phone or password you entered was incorrect!`, status: `Login Failure` });
             return;
         }
 
@@ -473,7 +473,7 @@ app.post('/books/request', authenticate, async (req, res) => {
         const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
         const user_id = decoded.id;
 
-        const query = `INSERT INTO reservations (user_id, book_id) VALUES(${mysql.escape(user_id)}, ${mysql.escape(id)});`;
+        const query = `INSERT INTO reservations (user_id, book_id, count) SELECT ${mysql.escape(user_id)}, ${mysql.escape(id)}, book_count FROM books where book_id = ${mysql.escape(id)};`;
         await run_query(query);
 
         res.send('Request sent successfully!');

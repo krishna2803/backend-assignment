@@ -6,10 +6,18 @@
     <title><%= user.user_name %></title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/profile.css">
+    <style>
+        @media (max-width: 576px) {
+            #back-button {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center my-4">User Profile</h1>
+        <a href="#" id='back-button' onclick="history.back()" class="btn btn-primary" onclick="history.back()">Back</a>
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <form id="profile_form" action="/profile/update" method="POST" class="p-4 border rounded shadow">

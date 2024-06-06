@@ -6,10 +6,19 @@
     <title>Requests for Admin Role</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/lists.css">
+    <style>
+        @media (max-width: 576px) {
+            #back-button {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-center my-4">Requests for Admin Role</h1>
+        <a href="#" id='back-button' onclick="history.back()" class="btn btn-primary" onclick="history.back()">Back</a>
+
         <div class="mb-4 text-center">
             <button class="btn btn-success mr-2" onclick="approveSelected()">Approve Selected</button>
             <button class="btn btn-danger" onclick="denySelected()">Deny Selected</button>

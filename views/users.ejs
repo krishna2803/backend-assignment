@@ -7,14 +7,22 @@
     <title>Registered Users</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/lists.css">
+    <style>
+        @media (max-width: 576px) {
+            #back-button {
+                display: none;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div class="container mt-5">
         <h1 class="text-center my-4">Registered Users</h1>
+        <a href="#" id='back-button' onclick="history.back()" class="btn btn-primary" onclick="history.back()">Back</a>
         <form action="/users" method="GET" class="mb-4">
             <div class="form-group">
-                <label for="q">Filter</label>
+                <label for="q" class="form-label">Filter</label>
                 <input type="text" name="q" class="form-control"
                     placeholder='example: "name:foobar,email:*@example.com"'>
             </div>

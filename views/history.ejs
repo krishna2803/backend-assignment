@@ -75,6 +75,11 @@
         .status-returned {
             color: #007bff;
         }
+        @media (max-width: 576px) {
+            #back-button {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -82,6 +87,7 @@
     <div class="container">
         <h1>User History</h1>
         <div class="mb-3">
+            <a href="#" id='back-button' onclick="history.back()" class="btn btn-primary">Back</a>
             <button onclick="returnSelected()" class="btn btn-primary">Return Selected Books</button>
         </div>
         <table class="table table-striped">
@@ -105,7 +111,7 @@
                         <td><%= request.book_title %></td>
                         <td><%= request.book_author %></td>
                         <td><%= request.book_genre %></td>
-                        <td><%= request.start_time %></td>
+                        <td><%= request.time %></td>
                         <td><%= request.fine %></td>
                         <td class="status-<%= request.status %>"><strong><%= request.status.toUpperCase() %></strong></td>
                     </tr>
