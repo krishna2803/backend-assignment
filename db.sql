@@ -11,7 +11,8 @@ CREATE TABLE users(
     `user_phone`    CHAR(10)     NOT NULL UNIQUE,
     `user_email`    VARCHAR(255) NOT NULL UNIQUE,
     `user_address`  VARCHAR(255) NOT NULL,
-    `user_role`     VARCHAR(255) NOT NULL DEFAULT 'client'
+    `user_role`     VARCHAR(255) NOT NULL DEFAULT 'client',
+    `admin_request` VARCHAR(255)
 );
 
 -- dynamic search will search and try to find text content from
@@ -35,25 +36,11 @@ CREATE TABLE reservations(
     `user_id`       INT NOT NULL,
     `book_id`       INT NOT NULL,
     `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
-    `start_date`    TIMESTAMP NOT NULL DEFAULT NOW(),
+    `start_time`    TIMESTAMP NOT NULL DEFAULT NOW(),
+    `fine`          NUMERIC(8,2) DEFAULT 0.00,
+    -- NUMERIC is just an alias for DECIMAL in MySQL
+    -- nine decimal digits into 4 bytes
+    -- https://dev.mysql.com/doc/refman/8.4/en/precision-math-decimal-characteristics.html
     FOREIGN KEY (`user_id`)   REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (`book_id`)   REFERENCES books(book_id) ON DELETE CASCADE
 );
-
-
-CREATE TABLE admin_requests(
-    `req_id`        INT PRIMARY KEY AUTO_INCREMENT,
-    `user_id`       INT NOT NULL,
-    `status`        VARCHAR(255) NOT NULL DEFAULT 'pending',
-    FOREIGN KEY (`user_id`)   REFERENCES users(user_id) ON DELETE CASCADE
-)
-
--- fine management
--- some other day :)
--- CREATE TABLE fines(
---     `fine_id`       INT PRIMARY KEY AUTO_INCREMENT,
---     `res_id`        INT NOT NULL,
---     `fine_amount`   FLOAT NOT NULL DEFAULT 0.0,
---     FOREIGN KEY (`res_id`)   REFERENCES reservations(res_id) ON DELETE CASCADE
--- );
-

@@ -46,15 +46,16 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ userIds })
+                    body: JSON.stringify({ id: userIds })
                 })
                 .then(response => {
                     if (response.ok) {
                         // Handle success
-                        console.log('Denial successful');
+                        alert('Request denied successfully');
+                        location.reload();
                     } else {
                         // Handle error
-                        console.error('Denial failed');
+                        alert('Some error occured! Contact Admin.');
                     }
                 })
                 .catch(error => {
@@ -76,17 +77,17 @@
             </tr>
         </thead>
         <tbody>
-            <% requests.forEach(user => {%>
+            <% users.forEach(user => {%>
             <tr>
                 <td> 
-                    <input type="checkbox" value="<%= user.user_id %>" <% if (user.request_status !== 'pending') { %> disabled <% } %>> 
+                    <input type="checkbox" value="<%= user.user_id %>" <% if (user.admin_request !== 'pending') { %> disabled <% } %>> 
                 </td>
                 <td> <%= user.user_name %> </td>
                 <td> <%= user.user_phone %> </td>
                 <td> <%= user.user_email %> </td>
                 <td> <%= user.user_address %> </td>
                 <td> <%= user.user_role %> </td>
-                <td> <%= user.request_status %> </td>
+                <td> <%= user.admin_request %> </td>
             </tr>
             <% });%>
         </tbody>

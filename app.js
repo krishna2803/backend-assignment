@@ -30,15 +30,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 const authenticate = (req, res, next) => {
     const cookie = req.headers.cookie;
     if (!cookie) {
-        console.log('Not logged in :(');
-        console.log('Redirecting to /login');
         res.redirect('/login');
         return;
     }
     const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
     if (decoded) {
-        // print the decoded token
-        console.log(decoded);
         next();
     } else {
         res.status(401).send("Unauthorized");
@@ -48,8 +44,6 @@ const authenticate = (req, res, next) => {
 const authenticate_admin = (req, res, next) => {
     const cookie = req.headers.cookie;
     if (!cookie) {
-        console.log('Not logged in :(');
-        console.log('Redirecting to /login');
         res.redirect('/login');
         return;
     }
@@ -70,35 +64,85 @@ const authenticate_admin = (req, res, next) => {
 const mysql = require('mysql2');
 const dbConn = require('./database.js');
 const run_query = async query => {
+    console.log('Running query: ', query);
     return await dbConn.promise().query(query);
 }
 
 app.get('/', authenticate, (req, res) => {
 
-    // TODO: If not logged in, redirect to /login [done]
-    // If admin, redirect to /admin
-    // Show user options
-    // 1. Books
     // 2. View fines due
-    // 3. View borrow history
-    // 4. view profile and logout
     const cookie = req.headers.cookie;
     const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
 
     const admin = decoded.role === 'admin';
 
-    console.log('decoded: ', decoded);
-
     if (!admin) {
-        res.render('clientdashboard', {user: decoded});
+        res.render('clientdashboard', { user: decoded });
         return;
     } else {
         res.render('admindashboard');
     }
 });
 
-app.post('/ping', (req, res) => {
+app.post('/ping', async (req, res) => {
     res.send('Pong! 🏓');
+
+    const hashed_pass = await argon2.hash('password');
+    const escaped_pass = mysql.escape(hashed_pass);
+    try {
+        const insertUsersQuery = `
+            INSERT INTO users (user_name, user_password, user_phone, user_email, user_address) VALUES
+            ('John Doe', ${escaped_pass}, '1234567890', 'john.doe@example.com', '123 Main St'),
+            ('Jane Smith', ${escaped_pass}, '0987654321', 'jane.smith@example.com', '456 Elm St'),
+            ('Alice Johnson', ${escaped_pass}, '2345678901', 'alice.johnson@example.com', '789 Oak St'),
+            ('Bob Brown', ${escaped_pass}, '3456789012', 'bob.brown@example.com', '321 Pine St'),
+            ('Charlie Davis', ${escaped_pass}, '4567890123', 'charlie.davis@example.com', '654 Cedar St'),
+            ('David Wilson', ${escaped_pass}, '5678901234', 'david.wilson@example.com', '987 Maple St'),
+            ('Emma Thomas', ${escaped_pass}, '6789012345', 'emma.thomas@example.com', '135 Birch St'),
+            ('Frank Miller', ${escaped_pass}, '7890123456', 'frank.miller@example.com', '246 Spruce St'),
+            ('Grace Lee', ${escaped_pass}, '8901234567', 'grace.lee@example.com', '357 Ash St'),
+            ('Hannah White', ${escaped_pass}, '9012345678', 'hannah.white@example.com', '468 Walnut St'),
+            ('Isaac Green', ${escaped_pass}, '1230987654', 'isaac.green@example.com', '579 Chestnut St'),
+            ('Jack Harris', ${escaped_pass}, '2341098765', 'jack.harris@example.com', '680 Magnolia St'),
+            ('Karen Lewis', ${escaped_pass}, '3452109876', 'karen.lewis@example.com', '791 Fir St'),
+            ('Liam Young', ${escaped_pass}, '4563210987', 'liam.young@example.com', '892 Redwood St'),
+            ('Mia Hall', ${escaped_pass}, '5674321098', 'mia.hall@example.com', '103 Poplar St'),
+            ('Noah Allen', ${escaped_pass}, '6785432109', 'noah.allen@example.com', '214 Beech St'),
+            ('Olivia King', ${escaped_pass}, '7896543210', 'olivia.king@example.com', '325 Willow St'),
+            ('Paul Scott', ${escaped_pass}, '8907654321', 'paul.scott@example.com', '436 Sycamore St'),
+            ('Quinn Baker', ${escaped_pass}, '9018765432', 'quinn.baker@example.com', '547 Dogwood St'),
+            ('Rachel Adams', ${escaped_pass}, '1239876543', 'rachel.adams@example.com', '658 Cypress St');
+        `;
+        await run_query(insertUsersQuery);
+    } catch (err) {
+        console.error(err);
+    }
+
+    const insertBooksQuery = `
+        INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES
+        ('The Great Gatsby', 'F. Scott Fitzgerald', 'Fiction,Classic', 'English', 'A novel set in the Roaring Twenties, exploring themes of wealth, love, and the American Dream.', 10),
+        ('To Kill a Mockingbird', 'Harper Lee', 'Fiction,Classic', 'English', 'A story of racial injustice and moral growth in the Deep South.', 8),
+        ('1984', 'George Orwell', 'Dystopian,Science Fiction', 'English', 'A chilling depiction of a totalitarian regime and the power of surveillance.', 12),
+        ('Pride and Prejudice', 'Jane Austen', 'Fiction,Romance', 'English', 'A romantic novel that also critiques the British landed gentry at the end of the 18th century.', 7),
+        ('The Catcher in the Rye', 'J.D. Salinger', 'Fiction,Classic', 'English', 'A story about teenage rebellion and angst in post-war America.', 6),
+        ('Moby-Dick', 'Herman Melville', 'Fiction,Adventure', 'English', 'A seafaring adventure and a symbolic exploration of obsession and revenge.', 4),
+        ('War and Peace', 'Leo Tolstoy', 'Fiction,Historical', 'English', 'A sweeping narrative of Russian society during the Napoleonic Era.', 3),
+        ('The Odyssey', 'Homer', 'Fiction,Classic,Adventure', 'English', 'An epic poem recounting the adventures of Odysseus on his journey home.', 9),
+        ('Crime and Punishment', 'Fyodor Dostoevsky', 'Fiction,Philosophical', 'English', 'A psychological drama about guilt and redemption.', 5),
+        ('The Brothers Karamazov', 'Fyodor Dostoevsky', 'Fiction,Philosophical', 'English', 'A complex narrative exploring faith, doubt, and morality.', 4),
+        ('Brave New World', 'Aldous Huxley', 'Dystopian,Science Fiction', 'English', 'A dystopian vision of a future society driven by technological advancements and control.', 11),
+        ('Jane Eyre', 'Charlotte Brontë', 'Fiction,Romance,Gothic', 'English', 'A novel about the struggles of an orphaned girl and her journey to independence.', 7),
+        ('Wuthering Heights', 'Emily Brontë', 'Fiction,Romance,Gothic', 'English', 'A tale of passion and revenge set on the Yorkshire moors.', 6),
+        ('Great Expectations', 'Charles Dickens', 'Fiction,Classic', 'English', 'A coming-of-age story about a young orphan named Pip.', 8),
+        ('The Hobbit', 'J.R.R. Tolkien', 'Fantasy,Adventure', 'English', 'A prelude to the Lord of the Rings, following the journey of Bilbo Baggins.', 10),
+        ('The Lord of the Rings', 'J.R.R. Tolkien', 'Fantasy,Adventure', 'English', 'An epic tale of the struggle against the dark lord Sauron.', 7),
+        ('Fahrenheit 451', 'Ray Bradbury', 'Dystopian,Science Fiction', 'English', 'A novel about a future society where books are banned and burned.', 6),
+        ('The Book Thief', 'Markus Zusak', 'Fiction,Historical', 'English', 'A story set in Nazi Germany, narrated by Death, about a young girl who finds solace in stolen books.', 9),
+        ('The Alchemist', 'Paulo Coelho', 'Fiction,Philosophical', 'English', 'A philosophical story about a shepherd boy on a journey to find his personal legend.', 12),
+        ('The Catch-22', 'Joseph Heller', 'Fiction,War', 'English', 'A satirical novel set during World War II, exploring the absurdities of war.', 5);
+        `;
+    await run_query(insertBooksQuery);
+
 });
 
 
@@ -107,7 +151,7 @@ app.get('/users', authenticate_admin, async (req, res) => {
         let result = await run_query('SELECT * FROM users');
         res.render('users', { users: result[0] });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -118,12 +162,10 @@ app.post('/users/remove', authenticate_admin, async (req, res) => {
 
         const query = `DELETE FROM users WHERE user_id IN (${mysql.escape(id)});`;
         await run_query(query);
-        
-        console.log(`query ran: ${query}`);
 
-        res.send('User(s) deleted successfully!');
+        res.status(200).send('User(s) deleted successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -135,12 +177,28 @@ app.get('/profile', authenticate, async (req, res) => {
     const query = `SELECT * FROM users WHERE user_id = ${mysql.escape(decoded.id)}`;
     const result = await run_query(query);
 
-    console.log(`query ran: ${query}`);
-
     const user_details = result[0][0];
 
-    res.render('profile', {user: user_details});
+    res.render('profile', { user: user_details });
 });
+
+app.get('/history', authenticate, async (req, res) => {
+        try {
+            const cookie = req.headers.cookie;
+            const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+            const user_id = decoded.id;
+
+            const history_query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id WHERE u.user_id = ${user_id};`;
+            
+            const requests = (await run_query(history_query))[0];
+
+            res.render('history', { requests: requests });
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Some error occured :(');
+        }
+    }
+);
 
 app.post('/profile/update', authenticate, async (req, res) => {
     const cookie = req.headers.cookie;
@@ -163,10 +221,6 @@ app.post('/profile/update', authenticate, async (req, res) => {
 
     await run_query(query);
 
-    console.log(`query ran: ${query}`);
-
-    console.log('Profile updated successfully!');
-
     res.redirect('/profile');
 });
 
@@ -174,11 +228,10 @@ app.post('/admin/ask', authenticate, async (req, res) => {
     try {
         const { id } = req.body;
 
-        const query = `INSERT INTO admin_requests (user_id) VALUES (${mysql.escape(id)});`;
+        // update admin_request column from users having id user_ids to "pending"
+        const query = `UPDATE users SET admin_request = 'pending' WHERE user_id IN (${mysql.escape(id)});`
 
         await run_query(query);
-
-        console.log(`query ran: ${query}`);
 
         res.send('Request sent successfully!');
 
@@ -190,51 +243,11 @@ app.post('/admin/ask', authenticate, async (req, res) => {
 
 app.get('/admin/requests', authenticate_admin, async (req, res) => {
     try {
-        const query = `SELECT * FROM admin_requests`;
+
+        const query = `SELECT * FROM users WHERE admin_request IS NOT NULL`;
         const result = await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
-        const all_requests = await Promise.all(result[0].map(async (request) => {
-            const user_query = `SELECT * FROM users WHERE user_id = ${mysql.escape(request.user_id)}`;
-            let user_result = (await run_query(user_query))[0][0];
-            user_result["request_status"] = request.status;
-            return user_result;
-        }));
-
-        res.render('adminrequests', { requests: all_requests });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/admin/approve', authenticate_admin, async (req, res) => {
-    try {
-        // BUG: id must be an array!!!!
-        const { id } = req.body;
-        const ids = Array.from(new Set(id));
-
-        const request_query = `SELECT * FROM admin_requests WHERE req_id IN (${mysql.escape(ids)})`;
-        const request_result = (await run_query(request_query))[0];
-
-        console.log('query ran: ', request_query);
-        
-        let user_ids = Array.from(new Set(request_result.map(request => request.user_id)));
-
-        const query = `UPDATE admin_requests SET status = 'approved' WHERE req_id IN (${mysql.escape(ids)});`;
-
-        await run_query(query);
-        console.log(`query ran: ${query}`);
-
-        const previlage_query = `UPDATE users SET user_role = 'admin' WHERE user_id IN (${mysql.escape(user_ids)});`;
-        await run_query(previlage_query);
-
-        console.log(`query ran: ${previlage_query}`);
-        console.log('User(s) promoted to admin successfully!');
-
-        res.send('Request(s) approved successfully!');
-
+        res.render('adminrequests', { users: result[0] });
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
@@ -245,11 +258,9 @@ app.post('/admin/deny', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
 
-        const query = `UPDATE admin_requests SET status = 'denied' WHERE user_id IN (${mysql.escape(id)});`;
+        const query = `UPDATE users SET admin_request = 'denied' WHERE user_id IN (${mysql.escape(id)});`;
 
         await run_query(query);
-
-        console.log(`query ran: ${query}`);
 
         res.send('Request(s) denied successfully!');
 
@@ -263,13 +274,11 @@ app.post('/admin/make', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
 
-        const query = `UPDATE users SET user_role = 'admin' WHERE user_id IN (${mysql.escape(id)});`;
+        const query = `UPDATE users SET user_role = 'admin', admin_request = 'approved' WHERE user_id IN (${mysql.escape(id)});`;
 
         await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
-        res.send('User promoted to admin successfully!');
+        res.send('User(s) promoted to admin successfully!');
 
     } catch (err) {
         console.error(err);
@@ -279,8 +288,6 @@ app.post('/admin/make', authenticate_admin, async (req, res) => {
 
 
 app.get('/register', (req, res) => {
-    console.log('Incoming register request!');
-    console.log(req.body);
     res.render('register');
 });
 
@@ -314,11 +321,9 @@ app.post('/register', async (req, res) => {
 
         await run_query(insert_query);
 
-        console.log(`query ran: ${insert_query}`);
-
         res.send('User created successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -333,9 +338,6 @@ app.get('/login', (req, res) => {
 app.post('/login', async (req, res) => {
     // logout first
     res.clearCookie('token');
-
-    // console.log('Incoming login request!');
-    console.log(req.body);
 
     try {
         const { creds } = req.body;
@@ -374,8 +376,6 @@ app.post('/login', async (req, res) => {
         }
 
         const result = await run_query(user_query);
-        console.log(`query ran: ${user_query}`);
-
         if (result[0].length === 0) {
             res.status(409).send("Account does not exist!");
             return;
@@ -395,7 +395,7 @@ app.post('/login', async (req, res) => {
         const user_email = user.user_email;
         const role = user.user_role;
 
-        console.log(`User ${username} logged in!`);
+        // console.log(`User ${username} logged in!`);
 
         jwt.sign({ id: user_id, name: username, phone: user_phone, email: user_email, role: role },
             process.env.JWTKEY,
@@ -403,16 +403,15 @@ app.post('/login', async (req, res) => {
             (err, token) => {
                 if (err) {
                     res.status(500).send('Some error occored with JWT :(');
-                    console.log(err);
+                    console.error(err);
                 }
-                console.log('JWT Signned :)');
-                console.log('Token:', token);
+
                 res.set('Authorization', `Bearer ${token}`);
                 res.cookie('token', token, { httpOnly: false });
                 res.redirect('/');
             });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -431,16 +430,12 @@ app.post('/books/create', authenticate_admin, async (req, res) => {
     try {
         const { title, author, genre, language, summary, count } = req.body;
 
-        // TODO: Check for admin privilages
-
         const query = `INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES(${mysql.escape(title)}, ${mysql.escape(author)}, ${mysql.escape(genre)}, ${mysql.escape(language)}, ${mysql.escape(summary)}, ${mysql.escape(count)});`;
         await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
         res.send('Book added successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -453,23 +448,17 @@ app.get('/books', authenticate, async (req, res) => {
         const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
         res.render('books', { books: books[0], user: decoded });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
-app.get('/book/requests', authenticate_admin, async (req, res) => {
+app.get('/books/requests', authenticate_admin, async (req, res) => {
     try {
-        const query = `SELECT * FROM reservations`;
+        const query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id;`;
         const result = await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
-        const books = await Promise.all(result[0].map(async (reservation) => {
-            
-        }));
-
-        res.render('bookrequests', { requests: books });
+        res.render('bookrequests', { requests: result[0] });
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
@@ -487,37 +476,50 @@ app.post('/books/request', authenticate, async (req, res) => {
         const query = `INSERT INTO reservations (user_id, book_id) VALUES(${mysql.escape(user_id)}, ${mysql.escape(id)});`;
         await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
         res.send('Request sent successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
-app.post('/books/approve', authenticate_admin, async (req, res) => {
+app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
 
         const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
         await run_query(update_query);
-        console.log(`query ran: ${update_query}`);
 
-        const reservations = await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`);
+        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`))[0];
         reservations.forEach(async (reservation) => {
             const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             const book = (await run_query(book_query))[0][0];
+            if (book.book_count) {
+                res.send('Book not available!');
+                return;
+            }
             const new_count = book.book_count - 1;
             const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             await run_query(update_book_query);
-            console.log(`query ran: ${update_book_query}`);
         });
-
 
         res.send('Request(s) approved successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
+app.post('/books/requests/deny', authenticate_admin, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const update_query = `UPDATE reservations SET status = 'denied' WHERE res_id IN (${mysql.escape(id)});`;
+        await run_query(update_query);
+
+        res.send('Request(s) denied successfully!');
+    } catch (err) {
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -529,7 +531,6 @@ app.get('/books/update', authenticate_admin, async (req, res) => {
         const query = `SELECT * FROM books WHERE book_id = ${mysql.escape(id)}`;
         const result = await run_query(query);
 
-        console.log(`query ran: ${query}`);
         const book = result[0][0];
 
         if (!book) {
@@ -539,17 +540,15 @@ app.get('/books/update', authenticate_admin, async (req, res) => {
 
         res.render('updatebook', { book: book });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
-// UDPDATE
+// UPDATE
 app.post('/books/update', authenticate_admin, async (req, res) => {
     try {
         const { id, title, author, genre, language, summary, count } = req.body;
-
-        // TODO: Check for admin privilages
 
         if (!title && !author && !genre && !language && !summary && !count) {
             res.status(400).send('Nothing to update!');
@@ -577,14 +576,12 @@ app.post('/books/update', authenticate_admin, async (req, res) => {
         }
         query += ` WHERE book_id = ${mysql.escape(id)};`;
 
-        
-        await run_query(query);
 
-        console.log(`query ran: ${query}`);
+        await run_query(query);
 
         res.send('Book updated successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
@@ -594,18 +591,12 @@ app.post('/books/delete', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
 
-        // console.log(`ID: ${id}`);
-
-        // TODO: Check for admin privilages
-
         const query = `DELETE FROM books WHERE book_id IN (${mysql.escape(id)});`;
         await run_query(query);
 
-        console.log(`query ran: ${query}`);
-
         res.send('Book(s) deleted successfully!');
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });

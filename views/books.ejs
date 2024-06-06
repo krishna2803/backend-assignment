@@ -26,10 +26,10 @@
 
 <body>
     <h1>Following Books Are Available for request</h1>
-    <form action="/books" method="GET"></form>
-    <label for="q">Filter</label>
-    <input type="text" name="q" placeholder="example: &quot;author:foobar,genre:fiction &quot; ">
-    <button type="submit">Apply</button>
+    <form action="/books" method="GET">
+        <label for="q">Filter</label>
+        <input type="text" name="q" placeholder="example: &quot;author:foobar,genre:fiction &quot; ">
+        <button type="submit">Apply</button>
     </form>
     <% if (user.role==='admin' ) { %>
         <button onclick="removeSelectedBooks()">Remove Selected Books</button>
@@ -85,7 +85,6 @@
                             }).then(response => {
                                 if (response.ok) {
                                     console.log(response);
-                                    alert('Selected books requested successfully');
                                 } else {
                                     alert('Failed to request selected books. Contact Admin.');
                                     return;
@@ -95,6 +94,7 @@
                                 return;
                             });
                         });
+                        alert('Selected books requested successfully');
                     }
                 </script>
                 <% } %>
