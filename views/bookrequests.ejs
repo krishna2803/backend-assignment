@@ -1,19 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Requests for Books</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="lists.css">
+    <style>
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        input[type="checkbox"]:checked {
+            transform: scale(1.2);
+        }
+
+        .btn {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-approved {
+            color: #28a745;
+        }
+        .status-denied {
+            color: #ff2828;
+        }
+        .status-pending {
+            color: #ffc107;
+        }
+        .status-returned {
+            color: #007bff;
+        }
+
+        .table td,
+        .table th {
+            text-align: center;
+        }
+
+        .book-title {
+            font-style: italic;
+        }
+
+        .fine {
+            white-space: nowrap;
+        }
+    </style>
 </head>
+
 <body>
-    <h1> Book Requests </h1>
-    <div>
-        <button onclick="approveSelected()">Approve Selected</button>
-        <button onclick="denySelected()">Deny Selected</button>
+    <div class="container mt-5">
+        <h1 class="text-center my-4">Book Requests</h1>
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="btn-group d-flex">
+                    <button onclick="approveSelected()" class="btn btn-primary flex-fill mr-2">Approve Selected</button>
+                    <button onclick="denySelected()" class="btn btn-danger flex-fill">Deny Selected</button>
+                </div>
+            </div>
+        </div>
         <script>
             const approveSelected = () => {
-                const selectedValues = document.querySelectorAll('input[name="selected_requests"]:checked');
-                const resIds = Array.from(selectedValues).map(res => res.value);
+                const selectedBooks = document.querySelectorAll('input[name="selected_requests"]:checked');
+                const resIds = Array.from(selectedBooks).map(res => res.value);
 
                 if (selectedBooks.length < 1) {
                     alert('Please select at least one book to approve.');
@@ -27,15 +84,19 @@
                     },
                     body: JSON.stringify({ id: resIds })
                 }).then(res => {
-                    alert(res);
+                    if (res.ok) {
+                        alert("Request(s) approved successfully!");
+                        location.reload();
+                    } else {
+                        alert('Some error occured! :(')
+                    }
                 }).catch(err => {
                     console.error('An error occurred. Contact Admin.');
                 });
-                location.reload();
             }
             const denySelected = () => {
-                const selectedValues = document.querySelectorAll('input[name="selected_requests"]:checked');
-                const resIds = Array.from(selectedValues).map(res => res.value);
+                const selectedBooks = document.querySelectorAll('input[name="selected_requests"]:checked');
+                const resIds = Array.from(selectedBooks).map(res => res.value);
 
                 if (selectedBooks.length < 1) {
                     alert('Please select at least one book to deny.');
@@ -49,47 +110,55 @@
                     },
                     body: JSON.stringify({ id: resIds })
                 }).then(res => {
-                    alert(res);
+                    if (res.ok) {
+                        alert('Request(s) denied succesfully!')
+                    }
                 }).catch(err => {
                     console.error('An error occurred. Contact Admin.', err);
                 });
                 location.reload();
             }
         </script>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Select</th>
+                    <th>Book Title</th>
+                    <th>Book Author</th>
+                    <th>Requestee Name</th>
+                    <th>Requestee Phone</th>
+                    <th>Requestee Email</th>
+                    <th>Available Count</th>
+                    <th>Requested On</th>
+                    <th>Fine</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% requests.forEach(request => { %>
+                <tr>
+                    <td>
+                        <input type="checkbox" name="selected_requests" value="<%= request.res_id %>"
+                            <% if (request.status !== 'pending' || request.book_count <= 0) { %> disabled <% } %>>
+                    </td>
+                    <td class="book-title"><%= request.book_title %></td>
+                    <td><%= request.book_author %></td>
+                    <td><%= request.user_name %></td>
+                    <td><%= request.user_phone %></td>
+                    <td><%= request.user_email %></td>
+                    <td><%= request.book_count %></td>
+                    <td><%= request.start_time %></td>
+                    <td class="fine">₹ <%= request.fine %></td>
+                    <td class="status-<%= request.status %>"><strong><%= request.status.toUpperCase() %></strong></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
     </div>
-    <table>
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>Book Title</th>
-                <th>Book Author</th>
-                <th>Requestee Name</th>
-                <th>Requestee Phone</th>
-                <th>Requestee Email</th>
-                <th>Available Count</th>
-                <th>Requested On</th>
-                <th>Fine</th>
-                <th>Request Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% requests.forEach(request => {%>
-            <tr>
-                <td> 
-                    <input type="checkbox" name="selected_requests" value="<%= request.res_id %>" <% if (request.status === 'pending' || request.book_count <= 0) { %> disabled <% } %>> 
-                </td>
-                <td> <%= request.book_title %> </td>
-                <td> <%= request.book_author %> </td>
-                <td> <%= request.user_name %> </td>
-                <td> <%= request.user_phone %> </td>
-                <td> <%= request.user_email %> </td>
-                <td> <%= request.book_count %> </td>
-                <td> <%= request.start_time %> </td>
-                <td> Rs. <%= request.fine %> </td>
-                <td> <%= request.status %> </td>
-            </tr>
-            <% });%>
-        </tbody>
-    </table>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

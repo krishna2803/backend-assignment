@@ -491,14 +491,10 @@ app.post('/books/return', authenticate, async (req, res) => {
         await run_query(query);
 
         // increase book count
-        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)}) AND status = 'approved';`))[0];
+        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)}) AND status = 'returned';`))[0];
         reservations.forEach(async (reservation) => {
             const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             const book = (await run_query(book_query))[0][0];
-            if (book.book_count) {
-                res.send('Book not available!');
-                return;
-            }
             const new_count = book.book_count + 1;
             const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             await run_query(update_book_query);
@@ -515,15 +511,12 @@ app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
 
-        const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
-        await run_query(update_query);
-
         // decrease book count
         const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`))[0];
         reservations.forEach(async (reservation) => {
             const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             const book = (await run_query(book_query))[0][0];
-            if (book.book_count) {
+            if (book.book_count <= 0) {
                 res.send('Book not available!');
                 return;
             }
@@ -531,6 +524,10 @@ app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
             const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
             await run_query(update_book_query);
         });
+        
+        const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
+        await run_query(update_query);
+
 
         res.send('Request(s) approved successfully!');
     } catch (err) {

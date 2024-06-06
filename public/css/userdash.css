@@ -1,0 +1,25 @@
+/* userdash.css */
+
+.card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.card-hover {
+    cursor: pointer;
+}
+
+.card-hover.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Disable pointer events */
+}
+
+.card-hover.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}

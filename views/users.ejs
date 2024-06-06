@@ -1,35 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registered Users</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/lists.css">
 </head>
+
 <body>
-    <h1>Registered Users</h1>
-    <form action="/users" method="GET"></form>
-        <label for="q">Filter</label>
-        <input type="text" name="q" placeholder="example: &quot;name:foobar,email:*@example.com&quot; ">
-        <button type="submit">Apply</button>
-    </form>
-    
-    <div>
-        <button id="makeAdminBtn" onclick="makeAdmin()">Make Admin</button>
-        <button id="deleteUsersBtn" onclick="deleteUsers()">Delete Users</button>
+    <div class="container mt-5">
+        <h1 class="text-center my-4">Registered Users</h1>
+        <form action="/users" method="GET" class="mb-4">
+            <div class="form-group">
+                <label for="q">Filter</label>
+                <input type="text" name="q" class="form-control"
+                    placeholder='example: "name:foobar,email:*@example.com"'>
+            </div>
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+        <div class="mb-3 text-center">
+            <button id="makeAdminBtn" class="btn btn-info mr-2" onclick="makeAdmin()">Make Admin</button>
+            <button id="deleteUsersBtn" class="btn btn-danger" onclick="deleteUsers()">Delete Users</button>
+        </div>
+    </div>
+
+    <table class="table table-striped table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Select</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% users.forEach(user=> { %>
+                <tr>
+                    <td> <input type="checkbox" name="selected_users" value="<%= user.user_id %>"> </td>
+                    <td>
+                        <%= user.user_name %>
+                    </td>
+                    <td>
+                        <%= user.user_phone %>
+                    </td>
+                    <td>
+                        <%= user.user_email %>
+                    </td>
+                    <td>
+                        <%= user.user_address %>
+                    </td>
+                    <td>
+                        <%= user.user_role %>
+                    </td>
+                </tr>
+                <% }); %>
+        </tbody>
+    </table>
     </div>
     <script>
         const makeAdmin = () => {
@@ -46,15 +76,13 @@
                 alert(res);
                 location.reload();
             }).catch(err => {
-                alert('Some error occured! Contact Admin.');
+                alert('Some error occurred! Contact Admin.');
             });
         };
-      
+
         const deleteUsers = () => {
             const selectedUsers = document.querySelectorAll('input[name="selected_users"]:checked');
             const userIds = Array.from(selectedUsers).map(user => user.value);
-
-            // console.log(userIds);
 
             fetch('/users/remove', {
                 method: 'POST',
@@ -66,33 +94,13 @@
                 alert(res);
                 location.reload();
             }).catch(err => {
-                alert('Some error occured! Contact Admin.');
+                alert('Some error occurred! Contact Admin.');
             });
         };
-      </script>
-    <table>
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Address</th>
-                <th>Role</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% users.forEach(user => {%>
-            <tr>
-                <td> <input type="checkbox" name="selected_users" value="<%= user.user_id %>"> </td>
-                <td> <%= user.user_name %> </td>
-                <td> <%= user.user_phone %> </td>
-                <td> <%= user.user_email %> </td>
-                <td> <%= user.user_address %> </td>
-                <td> <%= user.user_role %> </td>
-            </tr>
-            <% });%>
-        </tbody>
-    </table>
+    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>

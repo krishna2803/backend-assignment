@@ -1,20 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= user.name %> | Dashboard</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/userdash.css">
 </head>
+
 <body>
-    <% if (user.role !== 'admin') { %>
-    <% } %>
-    
-    <h1>Welcome, <%= user.name %>!</h1>
-    
-    <button onclick="window.location.href='/books'">View Books</button>
-    <button onclick="window.location.href='/profile'">View Profile</button>
-    <button onclick="window.location.href='/history'">View History</button>
-    <button onclick="window.location.href='/fines'" disabled title="Coming soon">View Due Fines</button>
-    
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Welcome, <%= user.name %>!</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card-deck">
+                    <div class="card card-hover text-center" onclick="window.location.href='/books'">
+                        <div class="card-body">
+                            <h5 class="card-title">View Books</h5>
+                        </div>
+                    </div>
+                    <div class="card card-hover text-center" onclick="window.location.href='/profile'">
+                        <div class="card-body">
+                            <h5 class="card-title">View Profile</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-deck mt-4">
+                    <div class="card card-hover text-center" onclick="window.location.href='/history'">
+                        <div class="card-body">
+                            <h5 class="card-title">View History</h5>
+                        </div>
+                    </div>
+                    <div class="card card-hover text-center disabled" title="Coming soon">
+                        <div class="card-body">
+                            <h5 class="card-title">View Due Fines</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>

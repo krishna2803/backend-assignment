@@ -1,0 +1,59 @@
+/* lists.css */
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+}
+
+h1 {
+    font-weight: 600;
+}
+
+.btn {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #e9ecef;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+input[type="checkbox"] {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+input[type="checkbox"]:checked {
+    transform: scale(1.2);
+}
+
+.container {
+    padding-top: 50px;
+}
+
+label {
+    font-weight: 500;
+}
+
+.table {
+    margin-top: 20px;
+}
+
+button {
+    margin-right: 10px;
+}
+
+button:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(33, 33, 33, 0.2);
+}
