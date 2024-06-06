@@ -37,6 +37,10 @@
         <script>
             const removeSelectedBooks = () => {
                 const selectedBooks = document.querySelectorAll('input[name="selected_books"]:checked');
+                if (selectedBooks.length < 1) {
+                    alert('Pleaase select atleast one book to delete.');
+                    return;
+                }
                 const bookIds = Array.from(selectedBooks).map(book => book.value);
                 fetch('/books/delete', {
                     method: 'POST',

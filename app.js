@@ -183,21 +183,21 @@ app.get('/profile', authenticate, async (req, res) => {
 });
 
 app.get('/history', authenticate, async (req, res) => {
-        try {
-            const cookie = req.headers.cookie;
-            const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-            const user_id = decoded.id;
+    try {
+        const cookie = req.headers.cookie;
+        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+        const user_id = decoded.id;
 
-            const history_query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id WHERE u.user_id = ${user_id};`;
-            
-            const requests = (await run_query(history_query))[0];
+        const history_query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id WHERE u.user_id = ${user_id};`;
 
-            res.render('history', { requests: requests });
-        } catch (err) {
-            console.error(err);
-            res.status(500).send('Some error occured :(');
-        }
+        const requests = (await run_query(history_query))[0];
+
+        res.render('history', { requests: requests });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
     }
+}
 );
 
 app.post('/profile/update', authenticate, async (req, res) => {
@@ -483,6 +483,34 @@ app.post('/books/request', authenticate, async (req, res) => {
     }
 });
 
+app.post('/books/return', authenticate, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const query = `UPDATE reservations SET status = 'returned' WHERE res_id IN (${mysql.escape(id)});`;
+        await run_query(query);
+
+        // increase book count
+        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)}) AND status = 'approved';`))[0];
+        reservations.forEach(async (reservation) => {
+            const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
+            const book = (await run_query(book_query))[0][0];
+            if (book.book_count) {
+                res.send('Book not available!');
+                return;
+            }
+            const new_count = book.book_count + 1;
+            const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
+            await run_query(update_book_query);
+        });
+
+        res.send('Book(s) returned successfully!');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+});
+
 app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
     try {
         const { id } = req.body;
@@ -490,6 +518,7 @@ app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
         const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
         await run_query(update_query);
 
+        // decrease book count
         const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`))[0];
         reservations.forEach(async (reservation) => {
             const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;

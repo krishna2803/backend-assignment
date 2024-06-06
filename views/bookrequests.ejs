@@ -15,7 +15,10 @@
                 const selectedValues = document.querySelectorAll('input[name="selected_requests"]:checked');
                 const resIds = Array.from(selectedValues).map(res => res.value);
 
-                // console.log('Selected: ', resIds);
+                if (selectedBooks.length < 1) {
+                    alert('Please select at least one book to approve.');
+                    return;
+                }
 
                 fetch('/books/requests/approve', {
                     method: 'POST',
@@ -34,7 +37,10 @@
                 const selectedValues = document.querySelectorAll('input[name="selected_requests"]:checked');
                 const resIds = Array.from(selectedValues).map(res => res.value);
 
-                // console.log('Selected: ', resIds);
+                if (selectedBooks.length < 1) {
+                    alert('Please select at least one book to deny.');
+                    return;
+                }
 
                 fetch('/books/requests/deny', {
                     method: 'POST',

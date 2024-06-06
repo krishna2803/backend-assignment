@@ -14,20 +14,18 @@
                 const selectedValues = document.querySelectorAll('input[name="selected_requests"]:checked');
                 const resIds = Array.from(selectedValues).map(res => res.value);
 
-                // console.log('Selected: ', resIds);
-
-                // fetch('/books/requests/approve', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json'
-                //     },
-                //     body: JSON.stringify({ id: resIds })
-                // }).then(res => {
-                //     alert(res);
-                // }).catch(err => {
-                //     console.error('An error occurred. Contact Admin.');
-                // });
-                // location.reload();
+                fetch('/books/return', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: resIds })
+                }).then(res => {
+                    alert(res);
+                }).catch(err => {
+                    console.error('An error occurred. Contact Admin.');
+                });
+                location.reload();
             }
         </script>
     </div>
