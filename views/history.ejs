@@ -106,7 +106,7 @@
                 <% requests.forEach(request => { %>
                     <tr>
                         <td>
-                            <input type="checkbox" name="selected_requests" value="<%= request.res_id %>" <% if (request.status !=='approved' || request.book_count <=0) { %> disabled <% } %>>
+                            <input type="checkbox" name="selected_requests" value="<%= request.res_id %>" <% if (request.status !=='approved') { %> disabled <% } %>>
                         </td>
                         <td><%= request.book_title %></td>
                         <td><%= request.book_author %></td>

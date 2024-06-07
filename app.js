@@ -305,50 +305,7 @@ app.get('/books/update', authenticate_admin, async (req, res) => {
 });
 
 // UPDATE
-app.post('/books/update', authenticate_admin, async (req, res) => {
-    try {
-        const { id, title, author, genre, language, summary, count } = req.body;
-
-        if (!title && !author && !genre && !language && !summary && !count) {
-            res.status(400).send('Nothing to update!');
-            return;
-        }
-
-        let query = `UPDATE books SET`;
-        if (title) {
-            query += ` book_title = ${mysql.escape(title)}`;
-        }
-        if (author) {
-            query += `, book_author = ${mysql.escape(author)}`;
-        }
-        if (genre) {
-            query += `, book_genre = ${mysql.escape(genre)}`;
-        }
-        if (language) {
-            query += `, book_language = ${mysql.escape(language)}`;
-        }
-        if (summary) {
-            query += `, book_summary = ${mysql.escape(summary)}`;
-        }
-        if (count) {
-            if (count <= 0) {
-                res.status(409).send(`<script>alert("Count must be a positive integer!"); window.location.href = "/books/update?id=${id}"; </script>`);
-                return;
-            }
-            query += `, book_count = ${mysql.escape(count)}`;
-        }
-        query += ` WHERE book_id = ${mysql.escape(id)};`;
-
-        await run_query(query);
-
-        console.error(id);
-
-        res.status(409).send(`<script>alert("Book updated successfully!"); window.location.href = "/books/update?id=${id}"; </script>`);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
+app.post('/books/update', authenticate_admin, books.update_book);
 
 
 // Handle 404s

@@ -15,10 +15,18 @@ const view_books = async (req, res) => {
 
         const filter = req.query.q;
         
+        const owned_books_query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id WHERE u.user_id = ${decoded.id} AND r.status <> 'pedning' AND r.status <> 'approved';`;
+        const owned_books_result = (await run_query(owned_books_query))[0];
+        const ownedBookIds = owned_books_result.map(book => book.book_id);
+        const ownedBooksSet = new Set(ownedBookIds);
+        console.log(ownedBooksSet);
+        
         if (!filter || filter.length === 0) {
-            res.render('books', { books: books[0], user: decoded });
+            const filtered_books = books[0].filter(book => !ownedBooksSet.has(book.book_id));
+            res.render('books', { books: filtered_books, user: decoded });
             return;
         }
+
 
         const filtered_books = books[0].filter(book => {
             return (
@@ -26,7 +34,8 @@ const view_books = async (req, res) => {
                 book.book_author.toLowerCase().includes(filter.toLowerCase()) ||
                 book.book_language.toLowerCase().includes(filter.toLowerCase()) ||
                 book.book_genre.toLowerCase().includes(filter.toLowerCase()) ||
-                book.book_summary.toLowerCase().includes(filter.toLowerCase())
+                book.book_summary.toLowerCase().includes(filter.toLowerCase()) &&
+                !ownedBooksSet.has(book.book_id)
             );
         });
         res.render('books', { books: filtered_books, user: decoded });
@@ -46,10 +55,20 @@ const create = async (req, res) => {
             return;
         }
 
+        const check_query = `SELECT * FROM books WHERE book_title = ${title} AND book_author = ${author} AND book_genre = ${genre} AND book_language = ${language} AND book_summary = ${summary}`;
+        const check_result = await run_query(check_query);
+        if (check_result[0].length > 0) {
+            const new_count = parseInt(count) + parseInt(check_result[0][0].book_count);
+            const query = `UPDATE books SET book_count = ${new_count} WHERE book_id = ${check_result[0][0].book_id};`;
+            await run_query(query);
+            res.status(200).send(`<script>alert("Books appended successfully!"); window.location.href = "/books/create"; </script>`);
+            return;
+        }
+
         const query = `INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES(${mysql.escape(title)}, ${mysql.escape(author)}, ${mysql.escape(genre)}, ${mysql.escape(language)}, ${mysql.escape(summary)}, ${mysql.escape(count)});`;
         await run_query(query);
 
-        res.status(409).send(`<script>alert("Book added successfully!"); window.location.href = "/books/create"; </script>`);
+        res.status(200).send(`<script>alert("Book added successfully!"); window.location.href = "/books/create"; </script>`);
         // res.send('Book added successfully!');
     } catch (err) {
         console.error(err);
@@ -174,6 +193,51 @@ const delete_books = async (req, res) => {
     }
 };
 
+const update_book = async (req, res) => {
+    try {
+        const { id, title, author, genre, language, summary, count } = req.body;
+
+        if (!title && !author && !genre && !language && !summary && !count) {
+            res.status(400).send('Nothing to update!');
+            return;
+        }
+
+        let query = `UPDATE books SET`;
+        if (title) {
+            query += ` book_title = ${mysql.escape(title)}`;
+        }
+        if (author) {
+            query += `, book_author = ${mysql.escape(author)}`;
+        }
+        if (genre) {
+            query += `, book_genre = ${mysql.escape(genre)}`;
+        }
+        if (language) {
+            query += `, book_language = ${mysql.escape(language)}`;
+        }
+        if (summary) {
+            query += `, book_summary = ${mysql.escape(summary)}`;
+        }
+        if (count) {
+            if (count <= 0) {
+                res.status(409).send(`<script>alert("Count must be a positive integer!"); window.location.href = "/books/update?id=${id}"; </script>`);
+                return;
+            }
+            query += `, book_count = ${mysql.escape(count)}`;
+        }
+        query += ` WHERE book_id = ${mysql.escape(id)};`;
+
+        await run_query(query);
+
+        console.error(id);
+
+        res.status(409).send(`<script>alert("Book updated successfully!"); window.location.href = "/books/update?id=${id}"; </script>`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Some error occured :(');
+    }
+};
+
 module.exports = {
     view_books,
     create,
@@ -182,5 +246,6 @@ module.exports = {
     return_books,
     approve_requests,
     deny_requests,
-    delete_books
+    delete_books,
+    update_book
 }
