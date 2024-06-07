@@ -1,16 +1,21 @@
 const jwt = require('jsonwebtoken');
 
 const authenticate = (req, res, next) => {
-    const cookie = req.headers.cookie;
-    if (!cookie) {
+    try {
+        const cookie = req.headers.cookie;
+        if (!cookie) {
+            res.redirect('/login');
+            return;
+        }
+        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+        if (decoded) {
+            next();
+        } else {
+            res.status(401).send("Unauthorized");
+        }
+    } catch (err) {
         res.redirect('/login');
-        return;
-    }
-    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-    if (decoded) {
-        next();
-    } else {
-        res.status(401).send("Unauthorized");
+            return;
     }
 };
 const authenticate_client_only = (req, res, next) => {
