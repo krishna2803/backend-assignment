@@ -20,8 +20,8 @@
         <a href="/" id='back-button' class="btn btn-primary">Back</a>
 
         <div class="mb-4 text-center">
-            <button class="btn btn-success mr-2" onclick="approveSelected()">Approve Selected</button>
-            <button class="btn btn-danger" onclick="denySelected()">Deny Selected</button>
+            <button id="approve_button" class="btn btn-success mr-2" onclick="approveSelected()" disabled>Approve Selected</button>
+            <button id="deny_button" class="btn btn-danger" onclick="denySelected()" disabled>Deny Selected</button>
         </div>
         <table class="table table-striped table-hover">
             <thead class="thead-dark">
@@ -107,6 +107,18 @@
                 console.error('Error:', error);
                 alert('Some error occurred! Contact Admin.');
             });
+        }
+
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        const approveButton = document.getElementById('approve_button');
+        const denyButton = document.getElementById('deny_button');
+        
+        if (checkboxes.length > 0) {
+            approveButton.disabled = false;
+            denyButton.disabled = false;
+        } else {
+            approveButton.disabled = true;
+            denyButton.disabled = true;
         }
     </script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

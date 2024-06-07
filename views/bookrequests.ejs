@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Requests for Books</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="lists.css">
+    <link rel="stylesheet" href="../css/lists.css">
     <style>
         input[type="checkbox"] {
             width: 20px;
@@ -72,8 +72,8 @@
         <div class="row mb-4">
             <div class="col-md-6 offset-md-3">
                 <div class="btn-group d-flex">
-                    <button onclick="approveSelected()" class="btn btn-primary flex-fill mr-2">Approve Selected</button>
-                    <button onclick="denySelected()" class="btn btn-danger flex-fill">Deny Selected</button>
+                    <button id="approve_button" onclick="approveSelected()" class="btn btn-primary flex-fill mr-2" disabled>Approve Selected</button>
+                    <button id="deny_button" onclick="denySelected()" class="btn btn-danger flex-fill" disabled>Deny Selected</button>
                 </div>
             </div>
         </div>
@@ -166,6 +166,19 @@
             </tbody>
         </table>
     </div>
+    <script>
+        const checkboxes = document.querySelectorAll('input[name="selected_requests"]');
+        const approveButton = document.getElementById('approve_button');
+        const denyButton = document.getElementById('deny_button');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="selected_requests"]:checked').length;
+                approveButton.disabled = selectedCount === 0;
+                denyButton.disabled = selectedCount === 0;
+            });
+        });
+    </script>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>

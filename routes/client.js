@@ -1,6 +1,7 @@
 const mysql = require('mysql2');
 const dbConn = require('../database.js');
 const jwt = require('jsonwebtoken');
+const argon2 = require('argon2');
 
 const run_query = async query => {
     // console.log('Running query: ', query);
@@ -11,12 +12,20 @@ const ask_admin = async (req, res) => {
     try {
         const { id } = req.body;
 
+        // check if the user has pending or approved book requests
+        const checkQuery = `SELECT * FROM reservations WHERE user_id = ${mysql.escape(id)} AND (status = 'pending' OR status = 'approved')`;
+        const checkResult = await run_query(checkQuery);
+        if (checkResult[0].length > 0) {
+            res.status(409).send(`<script>alert('You have pending or approved book requests!'); window.location.href = "/profile"; </script>`);
+            return;
+        }
+
         // update admin_request column from users having id user_ids to "pending"
         const query = `UPDATE users SET admin_request = 'pending' WHERE user_id IN (${mysql.escape(id)});`
 
         await run_query(query);
 
-        res.status(409).send(`<script>alert('Admin request sent successfully!'); window.location.href = "/profile"; </script>`);
+        res.status(200).send(`<script>alert('Admin request sent successfully!'); window.location.href = "/profile"; </script>`);
 
     } catch (err) {
         console.error(err);

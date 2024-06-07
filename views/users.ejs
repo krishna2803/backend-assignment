@@ -32,8 +32,8 @@
             </form>
         </div>
         <div class="mb-3 text-center">
-            <button id="makeAdminBtn" class="btn btn-info mr-2" onclick="makeAdmin()">Make Admin</button>
-            <button id="deleteUsersBtn" class="btn btn-danger" onclick="deleteUsers()">Delete Users</button>
+            <button id="make_admin" class="btn btn-info mr-2" onclick="makeAdmin()" disabled>Make Admin</button>
+            <button id="delete_users" class="btn btn-danger" onclick="deleteUsers()" disabled>Delete Users</button>
         </div>
 
         <table class="table table-striped table-hover">
@@ -108,6 +108,18 @@
                 alert('Some error occurred! Contact Admin.');
             });
         };
+        
+        const checkboxes = document.querySelectorAll('input[name="selected_users"]');
+        const make_admin_btn = document.getElementById('make_admin');
+        const delete_users_btn = document.getElementById('delete_users');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="selected_users"]:checked').length;
+                make_admin_btn.disabled = selectedCount === 0;
+                delete_users_btn.disabled = selectedCount === 0;
+            });
+        });
     </script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>

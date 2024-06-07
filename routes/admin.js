@@ -8,8 +8,7 @@ const run_query = async query => {
 }
 
 const view_admin_requests = async (req, res) => {
-    try {
-        
+    try {        
         const query = `SELECT * FROM users WHERE admin_request IS NOT NULL`;
         const result = await run_query(query);
 
