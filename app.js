@@ -11,6 +11,13 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
+// routes
+const admin = require('./routes/admin.js');
+const client = require('./routes/client.js');
+const books = require('./routes/books.js');
+
+const { authenticate, authenticate_admin, authenticate_client_only } = require('./routes/middleware.js');
+
 const app = express();
 
 // midddleware setup
@@ -25,39 +32,6 @@ app.set('view engine', 'ejs');
 
 // static files
 app.use(express.static(path.join(__dirname, 'public')));
-
-
-const authenticate = (req, res, next) => {
-    const cookie = req.headers.cookie;
-    if (!cookie) {
-        res.redirect('/login');
-        return;
-    }
-    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-    if (decoded) {
-        next();
-    } else {
-        res.status(401).send("Unauthorized");
-    }
-};
-
-const authenticate_admin = (req, res, next) => {
-    const cookie = req.headers.cookie;
-    if (!cookie) {
-        res.redirect('/login');
-        return;
-    }
-    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-    if (decoded) {
-        if (decoded.role === 'admin') {
-            next();
-        } else {
-            res.status(401).send("Access Denied. Only admins are allowed here.");
-        }
-    } else {
-        res.status(401).send("Unauthorized. Login first.");
-    }
-};
 
 
 // MySQL DB setup
@@ -87,7 +61,7 @@ app.get('/', authenticate, (req, res) => {
 app.post('/ping', async (req, res) => {
     res.send('Pong! 🏓');
 
-    const hashed_pass = await argon2.hash('password');
+    const hashed_pass = await argon2.hash(process.env.GLOBAL_SALT + 'password');
     const escaped_pass = mysql.escape(hashed_pass);
     try {
         const insertUsersQuery = `
@@ -146,164 +120,17 @@ app.post('/ping', async (req, res) => {
 });
 
 
-app.get('/users', authenticate_admin, async (req, res) => {
-    try {
-        let result = await run_query('SELECT * FROM users');
-        
-        const filter = req.query.q;
-        
-        if (!filter || filter.length === 0) {
-            res.render('users', { users: result[0] });
-            return;
-        }
+app.get('/profile', authenticate, client.view_profile);
 
-        const filtered_users = result[0].filter(user => {
-            return (
-                user.user_name.toLowerCase().includes(filter.toLowerCase()) ||
-                user.user_email.toLowerCase().includes(filter.toLowerCase()) ||
-                user.user_phone.toLowerCase().includes(filter.toLowerCase()) ||
-                user.user_address.toLowerCase().includes(filter.toLowerCase())
-            );
-        });
+app.get('/history', authenticate_client_only, client.view_history);
+app.post('/profile/update', authenticate_client_only, client.update_profile);
+app.post('/admin/ask', authenticate_client_only, client.ask_admin);
 
-        res.render('users', { users: filtered_users });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/users/remove', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const query = `DELETE FROM users WHERE user_id IN (${mysql.escape(id)});`;
-        await run_query(query);
-
-        res.status(200).send('User(s) deleted successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.get('/profile', authenticate, async (req, res) => {
-    const cookie = req.headers.cookie;
-    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-
-    const query = `SELECT * FROM users WHERE user_id = ${mysql.escape(decoded.id)}`;
-    const result = await run_query(query);
-
-    const user_details = result[0][0];
-
-    res.render('profile', { user: user_details });
-});
-
-app.get('/history', authenticate, async (req, res) => {
-    try {
-        const cookie = req.headers.cookie;
-        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-        const user_id = decoded.id;
-
-        const history_query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id WHERE u.user_id = ${user_id};`;
-
-        const requests = (await run_query(history_query))[0];
-
-        res.render('history', { requests: requests });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-}
-);
-
-app.post('/profile/update', authenticate, async (req, res) => {
-    const cookie = req.headers.cookie;
-    const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-
-    const { username, phone, email, address, password } = req.body;
-
-    // verify password 
-    const user_query = `SELECT * FROM users WHERE user_id = ${mysql.escape(decoded.id)}`;
-    const user_result = await run_query(user_query);
-
-    const hashed_pass = user_result[0][0].user_password;
-    const verify = await argon2.verify(hashed_pass, password);
-    if (!verify) {
-        res.status(409).send("Incorrect password!");
-        return;
-    }
-
-    const query = `UPDATE users SET user_name = ${mysql.escape(username)}, user_phone = ${mysql.escape(phone)}, user_email = ${mysql.escape(email)}, user_address = ${mysql.escape(address)} WHERE user_id = ${mysql.escape(decoded.id)}`;
-
-    await run_query(query);
-
-    res.redirect('/profile');
-});
-
-app.post('/admin/ask', authenticate, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        // update admin_request column from users having id user_ids to "pending"
-        const query = `UPDATE users SET admin_request = 'pending' WHERE user_id IN (${mysql.escape(id)});`
-
-        await run_query(query);
-
-        res.send('Request sent successfully!');
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.get('/admin/requests', authenticate_admin, async (req, res) => {
-    try {
-
-        const query = `SELECT * FROM users WHERE admin_request IS NOT NULL`;
-        const result = await run_query(query);
-
-        res.render('adminrequests', { users: result[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/admin/deny', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const query = `UPDATE users SET admin_request = 'denied' WHERE user_id IN (${mysql.escape(id)});`;
-
-        await run_query(query);
-
-        res.send('Request(s) denied successfully!');
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/admin/make', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const query = `UPDATE users SET user_role = 'admin', admin_request = 'approved' WHERE user_id IN (${mysql.escape(id)});`;
-
-        await run_query(query);
-
-        res.send('User(s) promoted to admin successfully!');
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
+app.post('/users/remove', authenticate_admin, admin.remove_users);
+app.get('/users', authenticate_admin, admin.view_users);
+app.get('/admin/requests', authenticate_admin, admin.view_admin_requests);
+app.post('/admin/deny', authenticate_admin, admin.deny_admin_request);
+app.post('/admin/make', authenticate_admin, admin.make_admin);
 
 app.get('/register', (req, res) => {
     res.render('register');
@@ -314,14 +141,16 @@ app.post('/register', async (req, res) => {
         const { username, password, confpass, phone, email, address } = req.body;
 
         if (confpass !== password) {
-            res.status(500).render('goback', { message: `Your passwords do not match :(`, status: `Registration Failure` });
+            res.status(409).send(`<script>alert("Your passwords do not match"); window.location.href = "/login"; </script>`);
+            // res.status(500).render('goback', { message: ``, status: `Registration Failure` });
         }
 
         const unique_email_query = `SELECT * FROM users WHERE user_email = ${mysql.escape(email)}`;
         const unique_email_result = await run_query(unique_email_query);
 
         if (unique_email_result[0].length > 0) {
-            res.status(409).render('goback', { message: `An account associated with that email already exists!`, status: `Registration Conflict` });
+            res.status(409).send(`<script>alert("An account associated with that email already exists!"); window.location.href = "/login"; </script>`);
+            // res.status(409).render('goback', { message: `An account associated with that email already exists!`, status: `Registration Conflict` });
             return;
         }
 
@@ -329,11 +158,12 @@ app.post('/register', async (req, res) => {
         const unique_phone_result = await run_query(unique_phone_query);
 
         if (unique_phone_result[0].length > 0) {
-            res.status(409).render('goback', { message: `An account associated with that phone number already exists!`, status: `Registration Conflict` });
+            res.status(409).send(`<script>alert("An account associated with that phone number already exists!"); window.location.href = "/login"; </script>`);
+            // res.status(409).render('goback', { message: `An account associated with that phone number already exists!`, status: `Registration Conflict` });
             return;
         }
 
-        const hashed_pass = await argon2.hash(password);
+        const hashed_pass = await argon2.hash(process.env.GLOBAL_SALT + password);
 
         const insert_query = `INSERT INTO users (user_name, user_password, user_phone, user_email, user_address) VALUES(${mysql.escape(username)}, ${mysql.escape(hashed_pass)}, ${mysql.escape(phone)}, ${mysql.escape(email)}, ${mysql.escape(address)});`;
 
@@ -347,8 +177,6 @@ app.post('/register', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    // res.send('hehe, login now :)');
-    // logout first
     res.clearCookie('token');
     res.render('login');
 });
@@ -382,7 +210,8 @@ app.post('/login', async (req, res) => {
         }
 
         if ((email && email_result[0].length === 0) && (phone && phone_result[0].length === 0)) {
-            res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
+            res.status(409).send(`<script>alert("Account associated with the phone or email does not exist!"); window.location.href = "/login"; </script>`);
+            // res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
             return;
         }
 
@@ -395,14 +224,16 @@ app.post('/login', async (req, res) => {
 
         const result = await run_query(user_query);
         if (result[0].length === 0) {
-            res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
+            res.status(409).send(`<script>alert("Account associated with the phone or email does not exist!"); window.location.href = "/login"; </script>`);
+            // res.status(409).render('goback', { message: `Account associated with the phone or email does not exist!`, status: `Login Failure` });
             return;
         }
 
         const hashed_pass = result[0][0].user_password;
-        const verify = await argon2.verify(hashed_pass, password);
+        const verify = await argon2.verify(hashed_pass, process.env.GLOBAL_SALT+password);
         if (!verify) {
-            res.status(409).render('goback', { message: `The email/phone or password you entered was incorrect!`, status: `Login Failure` });
+            res.status(409).send(`<script>alert("The email/phone or password you entered was incorrect!"); window.location.href = "/login"; </script>`);
+            // res.status(409).render('goback', { message: `The email/phone or password you entered was incorrect!`, status: `Login Failure` });
             return;
         }
 
@@ -443,148 +274,14 @@ app.get('/books/create', authenticate_admin, (req, res) => {
     res.render('addbook');
 });
 
-// CREATE
-app.post('/books/create', authenticate_admin, async (req, res) => {
-    try {
-        const { title, author, genre, language, summary, count } = req.body;
-
-        const query = `INSERT INTO books (book_title, book_author, book_genre, book_language, book_summary, book_count) VALUES(${mysql.escape(title)}, ${mysql.escape(author)}, ${mysql.escape(genre)}, ${mysql.escape(language)}, ${mysql.escape(summary)}, ${mysql.escape(count)});`;
-        await run_query(query);
-
-        res.send('Book added successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-// READ
-app.get('/books', authenticate, async (req, res) => {
-    try {
-        const books = await run_query('SELECT * FROM books');
-        const cookie = req.headers.cookie;
-        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-
-        const filter = req.query.q;
-        
-        if (!filter || filter.length === 0) {
-            res.render('books', { books: books[0], user: decoded });
-            return;
-        }
-
-        const filtered_books = books[0].filter(book => {
-            return (
-                book.book_title.toLowerCase().includes(filter.toLowerCase()) ||
-                book.book_author.toLowerCase().includes(filter.toLowerCase()) ||
-                book.book_language.toLowerCase().includes(filter.toLowerCase()) ||
-                book.book_genre.toLowerCase().includes(filter.toLowerCase()) ||
-                book.book_summary.toLowerCase().includes(filter.toLowerCase())
-            );
-        });
-        res.render('books', { books: filtered_books, user: decoded });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.get('/books/requests', authenticate_admin, async (req, res) => {
-    try {
-        const query = `SELECT * FROM reservations r JOIN users u ON r.user_id = u.user_id JOIN books b ON r.book_id = b.book_id;`;
-        const result = await run_query(query);
-
-        res.render('bookrequests', { requests: result[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-// request books
-app.post('/books/request', authenticate, async (req, res) => {
-    try {
-        const { id } = req.body;
-        const cookie = req.headers.cookie;
-        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
-        const user_id = decoded.id;
-
-        const query = `INSERT INTO reservations (user_id, book_id, count) SELECT ${mysql.escape(user_id)}, ${mysql.escape(id)}, book_count FROM books where book_id = ${mysql.escape(id)};`;
-        await run_query(query);
-
-        res.send('Request sent successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/books/return', authenticate, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const query = `UPDATE reservations SET status = 'returned' WHERE res_id IN (${mysql.escape(id)});`;
-        await run_query(query);
-
-        // increase book count
-        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)}) AND status = 'returned';`))[0];
-        reservations.forEach(async (reservation) => {
-            const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
-            const book = (await run_query(book_query))[0][0];
-            const new_count = book.book_count + 1;
-            const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
-            await run_query(update_book_query);
-        });
-
-        res.send('Book(s) returned successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/books/requests/approve', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        // decrease book count
-        const reservations = (await run_query(`SELECT * FROM reservations WHERE res_id IN (${mysql.escape(id)})`))[0];
-        reservations.forEach(async (reservation) => {
-            const book_query = `SELECT * FROM books WHERE book_id = ${mysql.escape(reservation.book_id)}`;
-            const book = (await run_query(book_query))[0][0];
-            if (book.book_count <= 0) {
-                res.send('Book not available!');
-                return;
-            }
-            const new_count = book.book_count - 1;
-            const update_book_query = `UPDATE books SET book_count = ${mysql.escape(new_count)} WHERE book_id = ${mysql.escape(reservation.book_id)}`;
-            await run_query(update_book_query);
-        });
-        
-        const update_query = `UPDATE reservations SET status = 'approved' WHERE res_id IN (${mysql.escape(id)});`;
-        await run_query(update_query);
-
-
-        res.send('Request(s) approved successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
-
-app.post('/books/requests/deny', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const update_query = `UPDATE reservations SET status = 'denied' WHERE res_id IN (${mysql.escape(id)});`;
-        await run_query(update_query);
-
-        res.send('Request(s) denied successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
+app.post('/books/create', authenticate_admin, books.create);
+app.get('/books', authenticate, books.view_books);
+app.get('/books/requests', authenticate_admin, books.view_requests);
+app.post('/books/request', authenticate_client_only, books.request_books);
+app.post('/books/return', authenticate_client_only, books.return_books);
+app.post('/books/requests/approve', authenticate_admin, books.approve_requests);
+app.post('/books/requests/deny', authenticate_admin, books.deny_requests);
+app.post('/books/delete', authenticate_admin, books.delete_books);
 
 app.get('/books/update', authenticate_admin, async (req, res) => {
     try {
@@ -596,7 +293,7 @@ app.get('/books/update', authenticate_admin, async (req, res) => {
         const book = result[0][0];
 
         if (!book) {
-            res.send('Book not found!');
+            res.status(409).send(`<script>alert("Book not found!"); window.location.href = "/books"; </script>`);
             return;
         }
 
@@ -634,34 +331,25 @@ app.post('/books/update', authenticate_admin, async (req, res) => {
             query += `, book_summary = ${mysql.escape(summary)}`;
         }
         if (count) {
+            if (count <= 0) {
+                res.status(409).send(`<script>alert("Count must be a positive integer!"); window.location.href = "/books/update?id=${id}"; </script>`);
+                return;
+            }
             query += `, book_count = ${mysql.escape(count)}`;
         }
         query += ` WHERE book_id = ${mysql.escape(id)};`;
 
-
         await run_query(query);
 
-        res.send('Book updated successfully!');
+        console.error(id);
+
+        res.status(409).send(`<script>alert("Book updated successfully!"); window.location.href = "/books/update?id=${id}"; </script>`);
     } catch (err) {
         console.error(err);
         res.status(500).send('Some error occured :(');
     }
 });
 
-// DELETE
-app.post('/books/delete', authenticate_admin, async (req, res) => {
-    try {
-        const { id } = req.body;
-
-        const query = `DELETE FROM books WHERE book_id IN (${mysql.escape(id)});`;
-        await run_query(query);
-
-        res.send('Book(s) deleted successfully!');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Some error occured :(');
-    }
-});
 
 // Handle 404s
 app.use((req, res, next) => {

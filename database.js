@@ -30,7 +30,7 @@ try {
         // console.log(admin); 
         if (!admin) {
             
-            argon2.hash(process.env.ADMIN_PASSWORD).then(passhash => {
+            argon2.hash(process.env.GLOBAL_SALT+process.env.ADMIN_PASSWORD).then(passhash => {
                 dbConn.query(`INSERT INTO users (user_phone, user_name, user_email, user_password, user_role, user_address) VALUES (${mysql.escape(process.env.ADMIN_PHONE)}, 'admin', ${mysql.escape(process.env.ADMIN_EMAIL)}, ${mysql.escape(passhash)}, 'admin', 'admin');`, (err, result) => {
                     if (err) throw err;
                     // console.log(result);
