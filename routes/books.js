@@ -19,7 +19,7 @@ const view_books = async (req, res) => {
         const owned_books_result = (await run_query(owned_books_query))[0];
         const ownedBookIds = owned_books_result.map(book => book.book_id);
         const ownedBooksSet = new Set(ownedBookIds);
-        console.log(ownedBooksSet);
+        // console.log(ownedBooksSet);
         
         if (!filter || filter.length === 0) {
             const filtered_books = books[0].filter(book => !ownedBooksSet.has(book.book_id));
@@ -55,7 +55,7 @@ const create = async (req, res) => {
             return;
         }
 
-        const check_query = `SELECT * FROM books WHERE book_title = ${title} AND book_author = ${author} AND book_genre = ${genre} AND book_language = ${language} AND book_summary = ${summary}`;
+        const check_query = `SELECT * FROM books WHERE book_title = ${mysql.escape(title)} AND book_author = ${mysql.escape(author)} AND book_genre = ${mysql.escape(genre)} AND book_language = ${mysql.escape(language)} AND book_summary = ${mysql.escape(summary)}`;
         const check_result = await run_query(check_query);
         if (check_result[0].length > 0) {
             const new_count = parseInt(count) + parseInt(check_result[0][0].book_count);
