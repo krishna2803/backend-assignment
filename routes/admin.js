@@ -1,5 +1,6 @@
 const mysql = require('mysql2');
 const dbConn = require('../database.js');
+const jwt = require('jsonwebtoken');
 
 const run_query = async query => {
     // console.log('Running query: ', query);
@@ -8,7 +9,7 @@ const run_query = async query => {
 
 const view_admin_requests = async (req, res) => {
     try {
-
+        
         const query = `SELECT * FROM users WHERE admin_request IS NOT NULL`;
         const result = await run_query(query);
 
@@ -53,7 +54,11 @@ const make_admin = async (req, res) => {
 
 const view_users = async (req, res) => {
     try {
-        let result = await run_query('SELECT * FROM users');
+        const cookie = req.headers.cookie;
+        const decoded = jwt.verify(cookie.split('token=')[1], process.env.JWTKEY);
+
+        // cannot delete himself super admin
+        let result = await run_query(`SELECT * FROM users WHERE user_id <> ${mysql.escape(decoded.id)} AND user_phone <> ${mysql.escape(process.env.ADMIN_PHONE)}`);
         
         const filter = req.query.q;
         
